@@ -2,7 +2,7 @@
 # Set env vars in the Coolify UI (no .env file required on the server).
 #
 # Domains in Coolify UI: https://app.links.halaman.cc  (do NOT add *.links here)
-# Also set TRAEFIK_DOMAIN_LABEL=links[.]halaman[.]cc for slug subdomain routing.
+# Slug subdomains ({slug}.links.halaman.cc) are routed via Traefik labels below.
 #
 # Local: cp .env.example .env then `docker compose up -d --build`
 
@@ -32,15 +32,14 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
-      - traefik.http.routers.halamanlink-slugs.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]${TRAEFIK_DOMAIN_LABEL:-links[.]halaman[.]cc}$`)
+      # User slug pages: {slug}.APP_DOMAIN — uses APP_DOMAIN from Coolify env
+      - traefik.http.routers.halamanlink-slugs.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*\.${APP_DOMAIN:-links.halaman.cc}$`)
       - traefik.http.routers.halamanlink-slugs.entrypoints=https
       - traefik.http.routers.halamanlink-slugs.tls=true
       - traefik.http.routers.halamanlink-slugs.tls.certresolver=letsencrypt
+      - traefik.http.routers.halamanlink-slugs.tls.domains[0].main=links.halaman.cc
+      - traefik.http.routers.halamanlink-slugs.tls.domains[0].sans=*.links.halaman.cc
       - traefik.http.routers.halamanlink-slugs.service=halamanlink-slugs
-      - traefik.http.routers.halamanlink-slugs-http.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]${TRAEFIK_DOMAIN_LABEL:-links[.]halaman[.]cc}$`)
-      - traefik.http.routers.halamanlink-slugs-http.entrypoints=http
-      - traefik.http.routers.halamanlink-slugs-http.middlewares=redirect-to-https@file
-      - traefik.http.routers.halamanlink-slugs-http.service=halamanlink-slugs
       - traefik.http.services.halamanlink-slugs.loadbalancer.server.port=4321
     healthcheck:
       test:
