@@ -1,16 +1,25 @@
-import { copyFileSync, existsSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
 
 const dbFile = process.env.ASTRO_DATABASE_FILE || "/app/data/content.db";
 const template = "/app/db-init/content.db";
+
+function toLibsqlUrl(filePath) {
+  if (filePath.startsWith("file:")) return filePath;
+  return `file:${filePath}`;
+}
+
+function getClient() {
+  return createClient({ url: toLibsqlUrl(dbFile) });
+}
 
 async function hasUsersTable() {
   if (!existsSync(dbFile) || statSync(dbFile).size === 0) {
     return false;
   }
 
-  const client = createClient({ url: `file:${dbFile}` });
+  const client = getClient();
   try {
     const result = await client.execute(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Users'",
@@ -23,79 +32,63 @@ async function hasUsersTable() {
   }
 }
 
-async function linksHasOpenInNewTab() {
-  const client = createClient({ url: `file:${dbFile}` });
+async function columnExists(table, column) {
+  const client = getClient();
   try {
-    const result = await client.execute("PRAGMA table_info(Links)");
-    return result.rows.some((row) => row.name === "openInNewTab");
+    const result = await client.execute(`PRAGMA table_info(${table})`);
+    return result.rows.some((row) => row.name === column);
   } catch {
     return false;
   } finally {
     client.close();
   }
-}
-
-async function profilesHasLocationLat() {
-  const client = createClient({ url: `file:${dbFile}` });
-  try {
-    const result = await client.execute("PRAGMA table_info(Profiles)");
-    return result.rows.some((row) => row.name === "locationLat");
-  } catch {
-    return false;
-  } finally {
-    client.close();
-  }
-}
-
-async function schemaNeedsPush() {
-  if (!(await linksHasOpenInNewTab())) return true;
-  if (!(await profilesHasLocationLat())) return true;
-  return false;
 }
 
 function copyTemplate() {
   if (!existsSync(template)) {
     throw new Error(`Database template missing at ${template}`);
   }
+  mkdirSync(dirname(dbFile), { recursive: true });
   copyFileSync(template, dbFile);
   console.log(`Initialized database from template at ${dbFile}`);
 }
 
-function pushSchema() {
-  console.log(`Pushing database schema to ${dbFile}`);
-  execFileSync("npx", ["astro", "db", "push", "--force"], {
-    stdio: "inherit",
-    env: process.env,
-  });
+async function applyMigrations() {
+  const client = getClient();
+  try {
+    if (!(await columnExists("Links", "openInNewTab"))) {
+      console.log("Migration: Links.openInNewTab");
+      await client.execute(
+        "ALTER TABLE Links ADD COLUMN openInNewTab INTEGER NOT NULL DEFAULT 1",
+      );
+    }
+
+    if (!(await columnExists("Profiles", "locationLat"))) {
+      console.log("Migration: Profiles location columns");
+      await client.execute("ALTER TABLE Profiles ADD COLUMN locationLat REAL");
+      await client.execute("ALTER TABLE Profiles ADD COLUMN locationLng REAL");
+      await client.execute(
+        "ALTER TABLE Profiles ADD COLUMN locationLabel TEXT NOT NULL DEFAULT ''",
+      );
+    }
+  } finally {
+    client.close();
+  }
 }
 
 async function main() {
-  if (await hasUsersTable()) {
-    if (await schemaNeedsPush()) {
-      console.log("Applying database schema updates...");
-      pushSchema();
-    } else {
-      console.log(`Database ready at ${dbFile}`);
-    }
-    return;
-  }
-
-  console.log(`Database missing tables at ${dbFile}, initializing...`);
-
-  try {
-    pushSchema();
-    if (await hasUsersTable()) {
-      return;
-    }
-  } catch (error) {
-    console.error("astro db push failed, falling back to template:", error);
-  }
-
-  copyTemplate();
+  console.log(`Checking database at ${dbFile}`);
 
   if (!(await hasUsersTable())) {
-    throw new Error(`Database initialization failed for ${dbFile}`);
+    console.log(`Database missing tables at ${dbFile}, initializing...`);
+    copyTemplate();
+    if (!(await hasUsersTable())) {
+      throw new Error(`Database initialization failed for ${dbFile}`);
+    }
   }
+
+  await applyMigrations();
+  console.log(`Database ready at ${dbFile}`);
 }
 
 main().catch((error) => {
