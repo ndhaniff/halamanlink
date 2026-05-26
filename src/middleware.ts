@@ -8,8 +8,7 @@ function getAppDomain(): string {
 }
 
 function resolveSubdomain(host: string, appDomain: string): string | null {
-  if (host === appDomain || host === `app.${appDomain}`) return null;
-  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return null;
+  if (isAppHost(host, appDomain)) return null;
 
   if (host.endsWith(`.${appDomain}`)) {
     const sub = host.slice(0, -(appDomain.length + 1));
@@ -21,6 +20,15 @@ function resolveSubdomain(host: string, appDomain: string): string | null {
   return null;
 }
 
+function isAppHost(host: string, appDomain: string): boolean {
+  if (!host) return true;
+  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return true;
+  if (host === appDomain || host === `app.${appDomain}` || host === `www.${appDomain}`) {
+    return true;
+  }
+  return false;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = context.url;
   const host = (context.request.headers.get("host") ?? "").split(":")[0] ?? "";
@@ -28,9 +36,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   let profileSlug = resolveSubdomain(host, appDomain);
 
-  if (!profileSlug && host && host !== appDomain && !host.startsWith("localhost")) {
-    const profile = await getProfileByVerifiedDomain(host);
-    if (profile) profileSlug = profile.slug;
+  if (!profileSlug && host && !isAppHost(host, appDomain)) {
+    try {
+      const profile = await getProfileByVerifiedDomain(host);
+      if (profile) profileSlug = profile.slug;
+    } catch (error) {
+      console.error("Custom domain lookup failed:", error);
+    }
   }
 
   if (
