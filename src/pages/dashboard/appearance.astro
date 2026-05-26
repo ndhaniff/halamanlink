@@ -1,6 +1,8 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import AvatarCropEditor from "../../components/dashboard/AvatarCropEditor.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
+import { MAX_AVATAR_BYTES } from "../../lib/uploads";
 import {
   getProfileByUserId,
   getUserPlan,
@@ -91,13 +93,26 @@ const initials = getInitials(profile.displayName);
           <div class="flex flex-wrap items-center gap-4">
             {
               avatarPreview ? (
-                <img
-                  id="avatar-preview"
-                  src={avatarPreview}
-                  alt={profile.displayName}
-                  class="h-20 w-20 rounded-full object-cover"
-                  style="box-shadow: var(--hl-shadow-1);"
-                />
+                <button
+                  type="button"
+                  id="avatar-preview-button"
+                  class="group relative rounded-full"
+                  title="Adjust photo position"
+                >
+                  <img
+                    id="avatar-preview"
+                    src={avatarPreview}
+                    alt={profile.displayName}
+                    class="h-20 w-20 rounded-full object-cover transition group-hover:brightness-95"
+                    style="box-shadow: var(--hl-shadow-1);"
+                  />
+                  <span
+                    class="pointer-events-none absolute inset-0 grid place-items-center rounded-full text-[11px] font-medium text-white opacity-0 transition group-hover:opacity-100"
+                    style="background: rgb(20 18 16 / 0.45);"
+                  >
+                    Edit
+                  </span>
+                </button>
               ) : (
                 <div
                   id="avatar-preview-fallback"
@@ -115,12 +130,17 @@ const initials = getInitials(profile.displayName);
               </label>
               {
                 avatarPreview && (
-                  <button type="button" id="avatar-remove" class="hl-btn hl-btn-ghost w-fit px-3 py-2 text-[13px]">
-                    Remove photo
-                  </button>
+                  <>
+                    <button type="button" id="avatar-adjust" class="hl-btn hl-btn-soft w-fit px-3 py-2 text-[13px]">
+                      Adjust position
+                    </button>
+                    <button type="button" id="avatar-remove" class="hl-btn hl-btn-ghost w-fit px-3 py-2 text-[13px]">
+                      Remove photo
+                    </button>
+                  </>
                 )
               }
-              <p class="text-[11.5px]" style="color: var(--hl-ink-3);">JPG, PNG, WebP or GIF · max 2 MB</p>
+              <p class="text-[11.5px]" style="color: var(--hl-ink-3);">JPG, PNG, WebP or GIF · max 2 MB · drag to reposition</p>
             </div>
           </div>
           <p id="avatar-status" class="mt-2 hidden text-sm" style="color: var(--hl-sage-deep);"></p>
@@ -199,28 +219,28 @@ const initials = getInitials(profile.displayName);
       </div>
     </aside>
   </div>
+
+  <AvatarCropEditor />
 </DashboardLayout>
 
-<script define:vars={{ themes }}>
+<script define:vars={{ themes, avatarPreview, maxAvatarBytes: MAX_AVATAR_BYTES }}>
   const form = document.getElementById("appearance-form");
   const errorEl = document.getElementById("error");
   const successEl = document.getElementById("success");
   const avatarFile = document.getElementById("avatar-file");
+  const avatarAdjust = document.getElementById("avatar-adjust");
+  const avatarPreviewButton = document.getElementById("avatar-preview-button");
   const avatarRemove = document.getElementById("avatar-remove");
   const avatarStatus = document.getElementById("avatar-status");
 
-  avatarFile?.addEventListener("change", async () => {
-    const file = avatarFile.files?.[0];
-    if (!file) return;
-
+  async function uploadAvatarBlob(blob) {
     errorEl?.classList.add("hidden");
     avatarStatus?.classList.remove("hidden");
     if (avatarStatus) avatarStatus.textContent = "Uploading…";
 
-    let succeeded = false;
     try {
       const body = new FormData();
-      body.append("avatar", file);
+      body.append("avatar", blob, "avatar.jpg");
 
       const res = await fetch("/api/avatar", { method: "POST", body });
       const json = await res.json().catch(() => ({}));
@@ -230,24 +250,74 @@ const initials = getInitials(profile.displayName);
           errorEl.textContent = json.error || "Upload failed";
           errorEl.classList.remove("hidden");
         }
-        avatarFile.value = "";
+        if (avatarStatus) avatarStatus.textContent = "";
+        avatarStatus?.classList.add("hidden");
         return;
       }
 
-      succeeded = true;
       window.location.reload();
     } catch {
       if (errorEl) {
         errorEl.textContent = "Upload failed. Check your connection and try again.";
         errorEl.classList.remove("hidden");
       }
-      avatarFile.value = "";
-    } finally {
-      if (!succeeded) {
-        if (avatarStatus) avatarStatus.textContent = "";
-        avatarStatus?.classList.add("hidden");
-      }
+      if (avatarStatus) avatarStatus.textContent = "";
+      avatarStatus?.classList.add("hidden");
     }
+  }
+
+  function openAvatarEditor(source) {
+    if (typeof window.openAvatarCropEditor !== "function") {
+      if (errorEl) {
+        errorEl.textContent = "Photo editor is still loading. Try again.";
+        errorEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    window.openAvatarCropEditor({
+      ...source,
+      onConfirm: uploadAvatarBlob,
+      onCancel: () => {
+        avatarFile.value = "";
+      },
+      onLoadError: () => {
+        if (errorEl) {
+          errorEl.textContent =
+            "Could not load this image for editing. Upload the file directly or use an image URL on your own domain.";
+          errorEl.classList.remove("hidden");
+        }
+        avatarFile.value = "";
+      },
+    });
+  }
+
+  avatarFile?.addEventListener("change", () => {
+    const file = avatarFile.files?.[0];
+    if (!file) return;
+
+    errorEl?.classList.add("hidden");
+
+    if (file.size > maxAvatarBytes) {
+      if (errorEl) {
+        errorEl.textContent = "Image must be 2 MB or smaller.";
+        errorEl.classList.remove("hidden");
+      }
+      avatarFile.value = "";
+      return;
+    }
+
+    openAvatarEditor({ file });
+  });
+
+  avatarAdjust?.addEventListener("click", () => {
+    if (!avatarPreview) return;
+    errorEl?.classList.add("hidden");
+    openAvatarEditor({ url: avatarPreview });
+  });
+
+  avatarPreviewButton?.addEventListener("click", () => {
+    avatarAdjust?.click();
   });
 
   avatarRemove?.addEventListener("click", async () => {
