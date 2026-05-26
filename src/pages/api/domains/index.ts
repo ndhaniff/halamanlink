@@ -6,6 +6,7 @@ import {
 } from "../../../lib/db-queries";
 import { canAddCustomDomain } from "../../../lib/plans";
 import { getUserPlan } from "../../../lib/db-queries";
+import { getAppDomain } from "../../../lib/app-env";
 import { randomBytes } from "node:crypto";
 
 export const prerender = false;
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!profile) return json({ error: "Not found" }, 404);
 
   const domain = await getCustomDomainByProfileId(profile.id);
-  const appDomain = import.meta.env.APP_DOMAIN || "localhost";
+  const appDomain = getAppDomain();
   return json({
     domain: domain ?? null,
     dnsInstructions: domain
@@ -65,7 +66,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const verificationToken = randomBytes(16).toString("hex");
   await upsertCustomDomain({ profileId: profile.id, domain, verificationToken });
 
-  const appDomain = import.meta.env.APP_DOMAIN || "localhost";
+  const appDomain = getAppDomain();
   return json({
     ok: true,
     domain,

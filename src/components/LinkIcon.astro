@@ -1,0 +1,14 @@
+---
+import { renderLinkIconSvg, normalizeLinkIcon } from "../lib/link-icons";
+
+interface Props {
+  icon?: string | null;
+  size?: number;
+  class?: string;
+}
+
+const { icon, size = 18, class: className } = Astro.props;
+const iconId = normalizeLinkIcon(icon);
+---
+
+<span class:list={["inline-flex shrink-0 items-center justify-center", className]} set:html={renderLinkIconSvg(iconId, size, className)} />

@@ -15,6 +15,7 @@
 ```
 APP_DOMAIN=links.halaman.cc
 APP_URL=https://app.links.halaman.cc
+TRAEFIK_DOMAIN_LABEL=links[.]halaman[.]cc
 SESSION_SECRET=<long-random-string>
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -22,8 +23,31 @@ STRIPE_PRICE_PRO_MONTHLY=price_...
 ```
 
 4. Ensure volume **`halamanlink-data`** persists at `/app/data` (SQLite + avatars)
-5. Set **Domains** on the resource (e.g. `https://app.links.halaman.cc`, `https://*.links.halaman.cc`)
-6. **Redeploy / rebuild** after changing `APP_DOMAIN` or `APP_URL` — they are baked in at build time
+5. Set **Domains** on the resource to **only**:
+   ```text
+   https://app.links.halaman.cc
+   ```
+   Do **not** add `https://*.links.halaman.cc` in the Coolify UI — Traefik 3 rejects wildcard `Host()` rules. User subdomains are routed via `HostRegexp` labels in `docker-compose.yml`.
+6. **Redeploy** after changing env vars
+
+## Subdomain routing (fix “No available server”)
+
+If `https://team7a.links.halaman.cc` returns **No available server** but `https://app.links.halaman.cc/p/team7a` works:
+
+1. **DNS** — `*.links` A record → your Coolify server IP
+2. **Coolify env** — set `TRAEFIK_DOMAIN_LABEL=links[.]halaman[.]cc`  
+   (bracket dots `[.]` escape the domain for Traefik regex; match your `APP_DOMAIN`)
+3. **Coolify Domains** — only `https://app.links.halaman.cc` (not `*.links...`)
+4. **Wildcard SSL** on the Coolify proxy for `*.links.halaman.cc` (DNS challenge)
+5. **Redeploy** the compose resource so Traefik labels are applied
+
+Check Traefik picked up the router:
+```bash
+docker inspect halamanlink --format '{{json .Config.Labels}}' | jq
+```
+Look for `traefik.http.routers.halamanlink-slugs.rule`.
+
+If `redirect-to-https@file` middleware errors, remove the two `halamanlink-slugs-http` labels and redeploy — HTTPS routing alone is enough.
 
 Coolify injects UI env vars into `${VAR}` placeholders in the compose file. You do **not** need a `.env` file on the server.
 

@@ -1,11 +1,8 @@
 import { defineMiddleware } from "astro:middleware";
+import { getAppDomain } from "./lib/app-env";
 import { validateSession } from "./lib/auth";
 import { getProfileByVerifiedDomain } from "./lib/db-queries";
 import { RESERVED_SLUGS } from "./lib/constants";
-
-function getAppDomain(): string {
-  return import.meta.env.APP_DOMAIN || "localhost";
-}
 
 function resolveSubdomain(host: string, appDomain: string): string | null {
   if (isAppHost(host, appDomain)) return null;

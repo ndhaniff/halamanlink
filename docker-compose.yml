@@ -1,8 +1,10 @@
 # Coolify: create a Docker Compose resource pointing at this file.
 # Set env vars in the Coolify UI (no .env file required on the server).
 #
+# Domains in Coolify UI: https://app.links.halaman.cc  (do NOT add *.links here)
+# Also set TRAEFIK_DOMAIN_LABEL=links[.]halaman[.]cc for slug subdomain routing.
+#
 # Local: cp .env.example .env then `docker compose up -d --build`
-# Compose reads .env automatically for ${VAR} substitution.
 
 services:
   halamanlink:
@@ -27,6 +29,19 @@ services:
       STRIPE_PRICE_PRO_MONTHLY: ${STRIPE_PRICE_PRO_MONTHLY:-}
     volumes:
       - halamanlink-data:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.halamanlink-slugs.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]${TRAEFIK_DOMAIN_LABEL:-links[.]halaman[.]cc}$`)
+      - traefik.http.routers.halamanlink-slugs.entrypoints=https
+      - traefik.http.routers.halamanlink-slugs.tls=true
+      - traefik.http.routers.halamanlink-slugs.tls.certresolver=letsencrypt
+      - traefik.http.routers.halamanlink-slugs.service=halamanlink-slugs
+      - traefik.http.routers.halamanlink-slugs-http.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]${TRAEFIK_DOMAIN_LABEL:-links[.]halaman[.]cc}$`)
+      - traefik.http.routers.halamanlink-slugs-http.entrypoints=http
+      - traefik.http.routers.halamanlink-slugs-http.middlewares=redirect-to-https@file
+      - traefik.http.routers.halamanlink-slugs-http.service=halamanlink-slugs
+      - traefik.http.services.halamanlink-slugs.loadbalancer.server.port=4321
     healthcheck:
       test:
         [
@@ -39,6 +54,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
 
 volumes:
   halamanlink-data:

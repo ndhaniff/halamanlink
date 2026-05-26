@@ -1,0 +1,138 @@
+---
+import { getLinkIconPickerItems, normalizeLinkIcon } from "../../lib/link-icons";
+
+interface Props {
+  id: string;
+  name?: string;
+  value?: string;
+  inputClass?: string;
+}
+
+const { id, name = "icon", value = "link", inputClass = "link-icon" } = Astro.props;
+const iconId = normalizeLinkIcon(value);
+const pickerItems = getLinkIconPickerItems();
+---
+
+<div class="icon-picker relative" data-icon-picker>
+  <input
+    type="hidden"
+    id={id}
+    name={name}
+    class={inputClass}
+    value={iconId}
+    data-icon-input
+  />
+  <button
+    type="button"
+    class="icon-picker-trigger grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border transition"
+    style="border-color: var(--hl-line); background: var(--hl-bg); color: var(--hl-sage-deep);"
+    aria-label="Choose icon"
+    aria-expanded="false"
+    data-icon-preview={iconId}
+  >
+    <span class="icon-picker-preview" set:html={pickerItems.find((item) => item.id === iconId)?.svg ?? pickerItems[0]?.svg} />
+  </button>
+  <div
+    class="icon-picker-panel hl-card absolute left-0 top-[calc(100%+8px)] z-30 hidden w-[min(320px,calc(100vw-2rem))] p-3 shadow-lg"
+    role="dialog"
+    aria-label="Choose a link icon"
+  >
+    <div class="mb-2 flex items-center justify-between gap-2">
+      <span class="hl-eyebrow">Icon</span>
+      <button type="button" class="icon-picker-close text-xs" style="color: var(--hl-ink-3);">Close</button>
+    </div>
+    <div class="grid max-h-56 grid-cols-6 gap-1.5 overflow-auto">
+      {
+        pickerItems.map((item) => (
+          <button
+            type="button"
+            class="icon-picker-option grid h-10 w-10 place-items-center rounded-[10px] border border-transparent transition hover:border-[var(--hl-line-2)]"
+            style={{
+              background: item.id === iconId ? "var(--hl-sage-soft)" : "var(--hl-bg-2)",
+              color: "var(--hl-sage-deep)",
+            }}
+            data-icon-id={item.id}
+            title={item.label}
+            aria-label={item.label}
+          >
+            <span set:html={item.svg} />
+          </button>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ pickerItems }}>
+  function closePicker(picker) {
+    picker.querySelector(".icon-picker-panel")?.classList.add("hidden");
+    picker.querySelector(".icon-picker-trigger")?.setAttribute("aria-expanded", "false");
+  }
+
+  function openPicker(picker) {
+    document.querySelectorAll("[data-icon-picker]").forEach((other) => {
+      if (other !== picker) closePicker(other);
+    });
+    picker.querySelector(".icon-picker-panel")?.classList.remove("hidden");
+    picker.querySelector(".icon-picker-trigger")?.setAttribute("aria-expanded", "true");
+  }
+
+  function setPickerIcon(picker, iconId) {
+    const input = picker.querySelector("[data-icon-input]");
+    const preview = picker.querySelector(".icon-picker-preview");
+    const trigger = picker.querySelector(".icon-picker-trigger");
+    const item = pickerItems.find((entry) => entry.id === iconId);
+    if (!input || !preview || !item) return;
+
+    input.value = iconId;
+    preview.innerHTML = item.svg;
+    trigger?.setAttribute("data-icon-preview", iconId);
+
+    picker.querySelectorAll(".icon-picker-option").forEach((button) => {
+      const selected = button.dataset.iconId === iconId;
+      button.style.background = selected ? "var(--hl-sage-soft)" : "var(--hl-bg-2)";
+    });
+  }
+
+  function initIconPickers(root = document) {
+    root.querySelectorAll("[data-icon-picker]").forEach((picker) => {
+      if (picker.dataset.bound === "true") return;
+      picker.dataset.bound = "true";
+
+      picker.querySelector(".icon-picker-trigger")?.addEventListener("click", () => {
+        const panel = picker.querySelector(".icon-picker-panel");
+        if (panel?.classList.contains("hidden")) openPicker(picker);
+        else closePicker(picker);
+      });
+
+      picker.querySelector(".icon-picker-close")?.addEventListener("click", () => {
+        closePicker(picker);
+      });
+
+      picker.querySelectorAll(".icon-picker-option").forEach((button) => {
+        button.addEventListener("click", () => {
+          setPickerIcon(picker, button.dataset.iconId);
+          closePicker(picker);
+          picker.querySelector("[data-icon-input]")?.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      });
+    });
+  }
+
+  initIconPickers();
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-icon-picker]")) return;
+    document.querySelectorAll("[data-icon-picker]").forEach(closePicker);
+  });
+
+  window.initIconPickers = initIconPickers;
+</script>
+
+<style>
+  .icon-picker-panel :global(svg) {
+    display: block;
+  }
+</style>

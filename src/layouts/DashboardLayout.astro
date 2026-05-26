@@ -6,6 +6,11 @@ import {
   getUserPlan,
 } from "../lib/db-queries";
 import { getInitials } from "../lib/themes";
+import {
+  getAppDomain,
+  getProfilePreviewPath,
+  getPublicProfileUrl,
+} from "../lib/app-env";
 
 interface Props {
   title?: string;
@@ -17,13 +22,9 @@ const { title = "Dashboard", active = "links", showPreview = true } = Astro.prop
 const user = Astro.locals.user!;
 const profile = await getProfileByUserId(user.id);
 const plan = await getUserPlan(user.id);
-const appDomain = import.meta.env.APP_DOMAIN || "localhost";
-const appUrl = import.meta.env.APP_URL || "http://localhost:4321";
-const previewUrl = profile ? `/p/${profile.slug}` : "/";
-const publicUrl =
-  appDomain === "localhost"
-    ? `${appUrl}/p/${profile?.slug ?? ""}`
-    : `https://${profile?.slug ?? ""}.${appDomain}`;
+const appDomain = getAppDomain();
+const previewUrl = profile ? getProfilePreviewPath(profile.slug) : "/";
+const publicUrl = profile ? getPublicProfileUrl(profile.slug) : "/";
 
 const nav = [
   { href: "/dashboard", id: "links", label: "Links" },
@@ -119,7 +120,7 @@ const nav = [
         <aside class="hl-dash-preview">
           <div class="flex items-center justify-between">
             <div class="hl-eyebrow">Live preview</div>
-            <a href={previewUrl} target="_blank" class="hl-btn hl-btn-soft px-2.5 py-1.5 text-[11.5px]">
+            <a href={publicUrl} target="_blank" class="hl-btn hl-btn-soft px-2.5 py-1.5 text-[11.5px]">
               Open
             </a>
           </div>

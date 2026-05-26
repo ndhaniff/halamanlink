@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Wordmark from "../components/Wordmark.astro";
+import { getAppDomain, getSlugSuffix } from "../lib/app-env";
 
 interface Props {
   mode: "login" | "signup";
@@ -8,9 +9,8 @@ interface Props {
 
 const { mode } = Astro.props;
 const isSignup = mode === "signup";
-const appDomain = import.meta.env.APP_DOMAIN || "localhost";
-const slugSuffix =
-  appDomain === "localhost" ? ".localhost" : `.${appDomain}`;
+const appDomain = getAppDomain();
+const slugSuffix = getSlugSuffix();
 const brandHost = appDomain === "localhost" ? "localhost" : appDomain;
 ---
 

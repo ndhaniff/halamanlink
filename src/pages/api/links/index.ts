@@ -10,6 +10,7 @@ import {
   updateLink,
 } from "../../../lib/db-queries";
 import { canAddLink } from "../../../lib/plans";
+import { sanitizeLinkIcon, suggestLinkIcon } from "../../../lib/link-icons";
 import { getUserPlan } from "../../../lib/db-queries";
 
 export const prerender = false;
@@ -47,7 +48,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const body = await request.json();
   const title = String(body.title ?? "").trim();
   let url = String(body.url ?? "").trim();
-  const icon = String(body.icon ?? "").trim();
+  const icon =
+    body.icon !== undefined && String(body.icon).trim()
+      ? sanitizeLinkIcon(body.icon)
+      : suggestLinkIcon(url);
 
   if (!title || !url) return json({ error: "Title and URL are required" }, 400);
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -93,7 +97,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return json({ error: "Invalid URL" }, 400);
     }
   }
-  if (body.icon !== undefined) updates.icon = String(body.icon).trim();
+  if (body.icon !== undefined) updates.icon = sanitizeLinkIcon(body.icon);
   if (body.isActive !== undefined) updates.isActive = Boolean(body.isActive);
 
   await updateLink(linkId, updates);

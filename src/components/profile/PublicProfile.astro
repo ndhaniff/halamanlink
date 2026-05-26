@@ -2,6 +2,7 @@
 import type { ThemePreset } from "../../lib/themes";
 import { getInitials, isDarkTheme } from "../../lib/themes";
 import type { LinkRecord } from "../../lib/db-queries";
+import LinkIcon from "../LinkIcon.astro";
 
 interface Props {
   profile: {
@@ -140,7 +141,7 @@ const editorialName = theme.id === "cream" || theme.id === "clay";
                   color: theme.accent,
                 }}
               >
-                {link.icon || "↗"}
+                <LinkIcon icon={link.icon} size={18} />
               </span>
               <span class="min-w-0 flex-1 truncate">{link.title}</span>
               <span style={{ color: theme.muted }}>↗</span>
