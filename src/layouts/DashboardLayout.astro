@@ -1,11 +1,11 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import Wordmark from "../components/Wordmark.astro";
+import ProfileAvatar from "../components/ProfileAvatar.astro";
 import {
   getProfileByUserId,
   getUserPlan,
 } from "../lib/db-queries";
-import { getInitials } from "../lib/themes";
 import {
   getAppDomain,
   getProfilePreviewPath,
@@ -46,12 +46,14 @@ const nav = [
         <div
           class="flex w-full items-center gap-2.5 rounded-[var(--hl-radius)] border border-[var(--hl-line)] bg-[var(--hl-bg-2)] p-3 text-left"
         >
-          <span
-            class="hl-display grid h-7 w-7 shrink-0 place-items-center rounded-lg text-sm"
-            style="background: var(--hl-clay); color: var(--hl-bg);"
-          >
-            {getInitials(profile.displayName)}
-          </span>
+          <ProfileAvatar
+            avatarUrl={profile.avatarUrl}
+            displayName={profile.displayName}
+            size={28}
+            textSize="text-[11px]"
+            class="rounded-lg"
+            imgClass="rounded-lg"
+          />
           <span class="min-w-0 flex-1 text-[13px]">
             <div class="font-medium">{profile.displayName}</div>
             <div class="hl-mono truncate text-[11px]" style="color: var(--hl-ink-3);">

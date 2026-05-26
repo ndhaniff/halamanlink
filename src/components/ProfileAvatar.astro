@@ -1,0 +1,46 @@
+---
+import { getInitials } from "../lib/themes";
+
+interface Props {
+  avatarUrl?: string | null;
+  displayName: string;
+  size?: number;
+  textSize?: string;
+  class?: string;
+  imgClass?: string;
+}
+
+const {
+  avatarUrl,
+  displayName,
+  size = 80,
+  textSize,
+  class: className,
+  imgClass,
+} = Astro.props;
+
+const src = avatarUrl?.trim() || "";
+const initials = getInitials(displayName);
+const fontSize = textSize ?? (size <= 32 ? "text-xs" : size <= 64 ? "text-xl" : "text-2xl");
+---
+
+{
+  src ? (
+    <img
+      src={src}
+      alt={displayName}
+      width={size}
+      height={size}
+      class:list={["shrink-0 rounded-full object-cover", imgClass, className]}
+      style={`width:${size}px;height:${size}px;`}
+    />
+  ) : (
+    <span
+      class:list={["hl-display grid shrink-0 place-items-center rounded-full", fontSize, className]}
+      style={`width:${size}px;height:${size}px;background:var(--hl-clay);color:var(--hl-bg);`}
+      aria-hidden={true}
+    >
+      {initials}
+    </span>
+  )
+}

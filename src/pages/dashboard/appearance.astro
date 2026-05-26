@@ -2,12 +2,13 @@
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import AvatarCropEditor from "../../components/dashboard/AvatarCropEditor.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
+import ProfileAvatar from "../../components/ProfileAvatar.astro";
 import { MAX_AVATAR_BYTES } from "../../lib/uploads";
 import {
   getProfileByUserId,
   getUserPlan,
 } from "../../lib/db-queries";
-import { getAvailableThemes, getInitials, parseTheme } from "../../lib/themes";
+import { getAvailableThemes, parseTheme } from "../../lib/themes";
 
 export const prerender = false;
 
@@ -20,7 +21,6 @@ const themes = getAvailableThemes(plan);
 const currentTheme = parseTheme(profile.theme);
 const previewUrl = `/p/${profile.slug}`;
 const avatarPreview = profile.avatarUrl || "";
-const initials = getInitials(profile.displayName);
 ---
 
 <DashboardLayout title="Appearance" active="appearance" showPreview={false}>
@@ -99,12 +99,13 @@ const initials = getInitials(profile.displayName);
                   class="group relative rounded-full"
                   title="Adjust photo position"
                 >
-                  <img
-                    id="avatar-preview"
-                    src={avatarPreview}
-                    alt={profile.displayName}
-                    class="h-20 w-20 rounded-full object-cover transition group-hover:brightness-95"
-                    style="box-shadow: var(--hl-shadow-1);"
+                  <ProfileAvatar
+                    avatarUrl={avatarPreview}
+                    displayName={profile.displayName}
+                    size={80}
+                    textSize="text-2xl"
+                    class="transition group-hover:brightness-95"
+                    imgClass="shadow-[var(--hl-shadow-1)]"
                   />
                   <span
                     class="pointer-events-none absolute inset-0 grid place-items-center rounded-full text-[11px] font-medium text-white opacity-0 transition group-hover:opacity-100"
@@ -114,13 +115,13 @@ const initials = getInitials(profile.displayName);
                   </span>
                 </button>
               ) : (
-                <div
-                  id="avatar-preview-fallback"
-                  class="hl-display grid h-20 w-20 place-items-center rounded-full text-2xl"
-                  style="background: var(--hl-clay); color: var(--hl-bg);"
-                >
-                  {initials}
-                </div>
+                <ProfileAvatar
+                  avatarUrl=""
+                  displayName={profile.displayName}
+                  size={80}
+                  textSize="text-2xl"
+                  imgClass="shadow-[var(--hl-shadow-1)]"
+                />
               )
             }
             <div class="flex flex-col gap-2">
@@ -140,7 +141,7 @@ const initials = getInitials(profile.displayName);
                   </>
                 )
               }
-              <p class="text-[11.5px]" style="color: var(--hl-ink-3);">JPG, PNG, WebP or GIF · max 2 MB · drag to reposition</p>
+              <p class="text-[11.5px]" style="color: var(--hl-ink-3);">JPG, PNG, WebP or GIF · max 2 MB · drag the circle to crop</p>
             </div>
           </div>
           <p id="avatar-status" class="mt-2 hidden text-sm" style="color: var(--hl-sage-deep);"></p>

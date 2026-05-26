@@ -15,7 +15,7 @@
       <div>
         <div id="avatar-crop-title" class="hl-display text-[20px]">Adjust photo</div>
         <p class="mt-1 text-[12.5px]" style="color: var(--hl-ink-2);">
-          Drag to reposition. Pinch or use the slider to zoom.
+          Drag the circle to choose the crop. Use the slider to zoom the photo.
         </p>
       </div>
       <button type="button" id="avatar-crop-close" class="hl-btn hl-btn-ghost px-2 py-1 text-lg leading-none">
@@ -23,22 +23,22 @@
       </button>
     </div>
 
-    <div class="relative mx-auto" style="width: 280px; height: 280px;">
+    <div
+      id="avatar-crop-stage"
+      class="relative mx-auto cursor-grab overflow-hidden rounded-[var(--hl-radius)] active:cursor-grabbing"
+      style="width: 280px; height: 280px; background: var(--hl-bg-2); touch-action: none;"
+    >
+      <img
+        id="avatar-crop-image"
+        alt=""
+        draggable="false"
+        class="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
+        style="transform: translate(-50%, -50%);"
+      />
       <div
-        id="avatar-crop-viewport"
-        class="absolute inset-0 cursor-grab overflow-hidden rounded-full active:cursor-grabbing"
-        style="touch-action: none;"
-      >
-        <img
-          id="avatar-crop-image"
-          alt=""
-          draggable="false"
-          class="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
-        />
-      </div>
-      <div
+        id="avatar-crop-circle"
         aria-hidden="true"
-        class="pointer-events-none absolute inset-0 rounded-full ring-2 ring-white"
+        class="pointer-events-none absolute rounded-full ring-2 ring-white"
         style="box-shadow: 0 0 0 9999px rgb(20 18 16 / 0.55);"
       ></div>
     </div>
@@ -63,16 +63,18 @@
 
 <script>
   import {
-    AVATAR_CROP_VIEWPORT,
-    clampPan,
+    AVATAR_CROP_CIRCLE,
+    AVATAR_CROP_STAGE,
+    clampCircle,
     cropAvatarToBlob,
     getCoverScale,
     loadImageSource,
   } from "../../lib/avatar-crop";
 
   const modal = document.getElementById("avatar-crop-modal");
-  const viewport = document.getElementById("avatar-crop-viewport");
+  const stage = document.getElementById("avatar-crop-stage");
   const imageEl = document.getElementById("avatar-crop-image");
+  const circleEl = document.getElementById("avatar-crop-circle");
   const zoomEl = document.getElementById("avatar-crop-zoom");
   const errorEl = document.getElementById("avatar-crop-error");
   const saveBtn = document.getElementById("avatar-crop-save");
@@ -81,8 +83,9 @@
 
   if (
     !(modal instanceof HTMLElement) ||
-    !(viewport instanceof HTMLElement) ||
+    !(stage instanceof HTMLElement) ||
     !(imageEl instanceof HTMLImageElement) ||
+    !(circleEl instanceof HTMLElement) ||
     !(zoomEl instanceof HTMLInputElement) ||
     !(errorEl instanceof HTMLElement) ||
     !(saveBtn instanceof HTMLButtonElement)
@@ -91,8 +94,8 @@
   }
 
   let activeImage = null;
-  let offsetX = 0;
-  let offsetY = 0;
+  let circleX = 0;
+  let circleY = 0;
   let userScale = 1;
   let dragging = false;
   let dragStartX = 0;
@@ -112,28 +115,36 @@
     errorEl.classList.add("hidden");
   }
 
-  function applyTransform() {
+  function applyLayout() {
     if (!activeImage) return;
 
-    const scale = getCoverScale(activeImage.naturalWidth, activeImage.naturalHeight, AVATAR_CROP_VIEWPORT) * userScale;
+    const scale =
+      getCoverScale(activeImage.naturalWidth, activeImage.naturalHeight, AVATAR_CROP_CIRCLE) * userScale;
+
     imageEl.style.width = `${activeImage.naturalWidth * scale}px`;
     imageEl.style.height = `${activeImage.naturalHeight * scale}px`;
-    imageEl.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+
+    circleEl.style.width = `${AVATAR_CROP_CIRCLE}px`;
+    circleEl.style.height = `${AVATAR_CROP_CIRCLE}px`;
+    circleEl.style.left = `calc(50% + ${circleX}px - ${AVATAR_CROP_CIRCLE / 2}px)`;
+    circleEl.style.top = `calc(50% + ${circleY}px - ${AVATAR_CROP_CIRCLE / 2}px)`;
   }
 
-  function syncPan() {
+  function syncCircle() {
     if (!activeImage) return;
-    const clamped = clampPan(
-      offsetX,
-      offsetY,
+
+    const clamped = clampCircle(
+      circleX,
+      circleY,
       activeImage.naturalWidth,
       activeImage.naturalHeight,
-      AVATAR_CROP_VIEWPORT,
+      AVATAR_CROP_STAGE,
+      AVATAR_CROP_CIRCLE,
       userScale,
     );
-    offsetX = clamped.x;
-    offsetY = clamped.y;
-    applyTransform();
+    circleX = clamped.x;
+    circleY = clamped.y;
+    applyLayout();
   }
 
   function closeModal() {
@@ -156,8 +167,8 @@
 
   async function openAvatarCropEditor(options) {
     hideError();
-    offsetX = 0;
-    offsetY = 0;
+    circleX = 0;
+    circleY = 0;
     userScale = 1;
     zoomEl.value = "1";
     onConfirm = options.onConfirm ?? null;
@@ -169,7 +180,16 @@
 
       activeImage = await loadImageSource(source);
       imageEl.src = activeImage.src;
-      syncPan();
+
+      const isSquareCrop =
+        activeImage.naturalWidth === activeImage.naturalHeight &&
+        activeImage.naturalWidth <= AVATAR_CROP_OUTPUT;
+      if (isSquareCrop && !options.file) {
+        userScale = 1.25;
+        zoomEl.value = "1.25";
+      }
+
+      syncCircle();
       openModal();
     } catch {
       options.onLoadError?.();
@@ -179,45 +199,45 @@
 
   zoomEl.addEventListener("input", () => {
     userScale = Number(zoomEl.value) || 1;
-    syncPan();
+    syncCircle();
   });
 
-  viewport.addEventListener("pointerdown", (event) => {
+  stage.addEventListener("pointerdown", (event) => {
     if (!activeImage) return;
     dragging = true;
     dragStartX = event.clientX;
     dragStartY = event.clientY;
-    dragOriginX = offsetX;
-    dragOriginY = offsetY;
-    viewport.setPointerCapture(event.pointerId);
+    dragOriginX = circleX;
+    dragOriginY = circleY;
+    stage.setPointerCapture(event.pointerId);
   });
 
-  viewport.addEventListener("pointermove", (event) => {
+  stage.addEventListener("pointermove", (event) => {
     if (!dragging) return;
-    offsetX = dragOriginX + (event.clientX - dragStartX);
-    offsetY = dragOriginY + (event.clientY - dragStartY);
-    syncPan();
+    circleX = dragOriginX + (event.clientX - dragStartX);
+    circleY = dragOriginY + (event.clientY - dragStartY);
+    syncCircle();
   });
 
   function stopDragging(event) {
     if (!dragging) return;
     dragging = false;
-    if (viewport.hasPointerCapture(event.pointerId)) {
-      viewport.releasePointerCapture(event.pointerId);
+    if (stage.hasPointerCapture(event.pointerId)) {
+      stage.releasePointerCapture(event.pointerId);
     }
   }
 
-  viewport.addEventListener("pointerup", stopDragging);
-  viewport.addEventListener("pointercancel", stopDragging);
+  stage.addEventListener("pointerup", stopDragging);
+  stage.addEventListener("pointercancel", stopDragging);
 
-  viewport.addEventListener(
+  stage.addEventListener(
     "wheel",
     (event) => {
       if (!activeImage) return;
       event.preventDefault();
       userScale = Math.min(3, Math.max(1, userScale + (event.deltaY < 0 ? 0.05 : -0.05)));
       zoomEl.value = String(userScale);
-      syncPan();
+      syncCircle();
     },
     { passive: false },
   );
@@ -231,8 +251,8 @@
 
     try {
       const blob = await cropAvatarToBlob(activeImage, {
-        offsetX,
-        offsetY,
+        circleX,
+        circleY,
         userScale,
       });
       await onConfirm(blob);

@@ -3,13 +3,13 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
 import LinkEditor from "../../components/dashboard/LinkEditor.astro";
 import SocialEditor from "../../components/dashboard/SocialEditor.astro";
+import ProfileAvatar from "../../components/ProfileAvatar.astro";
 import {
   getLinksByProfileId,
   getProfileByUserId,
   getUserPlan,
 } from "../../lib/db-queries";
 import { PLAN_LIMITS } from "../../lib/plans";
-import { getInitials } from "../../lib/themes";
 
 export const prerender = false;
 
@@ -34,12 +34,12 @@ const activeCount = links.filter((l) => l.isActive).length;
   </DashHeader>
 
   <div class="hl-card mx-7 mt-7 flex items-center gap-4 p-5">
-    <span
-      class="hl-display grid h-16 w-16 shrink-0 place-items-center rounded-full text-[26px]"
-      style="background: var(--hl-clay); color: var(--hl-bg);"
-    >
-      {getInitials(profile.displayName)}
-    </span>
+    <ProfileAvatar
+      avatarUrl={profile.avatarUrl}
+      displayName={profile.displayName}
+      size={64}
+      textSize="text-[26px]"
+    />
     <div class="min-w-0 flex-1">
       <div class="hl-eyebrow">Header block</div>
       <div class="hl-display text-[22px]">{profile.displayName}</div>
