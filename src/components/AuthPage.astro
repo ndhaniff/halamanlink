@@ -8,6 +8,10 @@ interface Props {
 
 const { mode } = Astro.props;
 const isSignup = mode === "signup";
+const appDomain = import.meta.env.APP_DOMAIN || "localhost";
+const slugSuffix =
+  appDomain === "localhost" ? ".localhost" : `.${appDomain}`;
+const brandHost = appDomain === "localhost" ? "localhost" : appDomain;
 ---
 
 <BaseLayout title={`${isSignup ? "Sign up" : "Log in"} · Halamanlink`}>
@@ -48,7 +52,7 @@ const isSignup = mode === "signup";
         </p>
       </div>
       <div class="relative flex gap-3.5 text-xs" style="color: var(--hl-ink-3);">
-        <span>halamanlink.app</span><span>·</span><span>v2.4 — soft launch</span>
+        <span>{brandHost}</span><span>·</span><span>v2.4 — soft launch</span>
       </div>
     </div>
 
@@ -89,7 +93,7 @@ const isSignup = mode === "signup";
                       class="grid place-items-center border-l px-3.5 text-[13px]"
                       style="border-color: var(--hl-line); background: var(--hl-bg-2); color: var(--hl-ink-3); font-family: var(--hl-font-mono);"
                     >
-                      .halamanlink.app
+                      {slugSuffix}
                     </span>
                   </div>
                 </div>

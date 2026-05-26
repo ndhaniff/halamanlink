@@ -27,9 +27,10 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /tmp/astro-build.db /app/db-init/content.db
+COPY scripts/init-db.mjs /app/scripts/init-db.mjs
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
-RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/data /app/data/uploads/avatars /app/db-init
+RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/data /app/data/uploads/avatars /app/db-init /app/scripts
 
 VOLUME ["/app/data"]
 
