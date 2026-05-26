@@ -25,7 +25,9 @@ STRIPE_PRICE_PRO_MONTHLY=price_...
 5. Set **Domains** on the resource (e.g. `https://app.links.halaman.cc`, `https://*.links.halaman.cc`)
 6. **Redeploy / rebuild** after changing `APP_DOMAIN` or `APP_URL` — they are baked in at build time
 
-Coolify injects UI env vars into `${VAR}` placeholders in the compose file. You do **not** need a `.env` file on the server. Do **not** set `ASTRO_DATABASE_FILE` as a build arg — the Dockerfile uses `/tmp` during build and `/app/data/content.db` at runtime.
+Coolify injects UI env vars into `${VAR}` placeholders in the compose file. You do **not** need a `.env` file on the server.
+
+**Important:** `ASTRO_DATABASE_FILE` must be `/app/data/content.db` at **build time and runtime** (already set in the Dockerfile). Do not override it to another path in Coolify env vars.
 
 ## Local Docker (optional)
 

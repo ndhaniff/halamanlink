@@ -1,4 +1,5 @@
 import { copyFileSync, existsSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { createClient } from "@libsql/client";
 
 const dbFile = process.env.ASTRO_DATABASE_FILE || "/app/data/content.db";
@@ -22,18 +23,44 @@ async function hasUsersTable() {
   }
 }
 
+function copyTemplate() {
+  if (!existsSync(template)) {
+    throw new Error(`Database template missing at ${template}`);
+  }
+  copyFileSync(template, dbFile);
+  console.log(`Initialized database from template at ${dbFile}`);
+}
+
+function pushSchema() {
+  console.log(`Pushing database schema to ${dbFile}`);
+  execFileSync("npx", ["astro", "db", "push", "--force"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+}
+
 async function main() {
   if (await hasUsersTable()) {
+    console.log(`Database ready at ${dbFile}`);
     return;
   }
 
-  if (!existsSync(template)) {
-    console.error(`Database template missing at ${template}`);
-    process.exit(1);
+  console.log(`Database missing tables at ${dbFile}, initializing...`);
+
+  try {
+    pushSchema();
+    if (await hasUsersTable()) {
+      return;
+    }
+  } catch (error) {
+    console.error("astro db push failed, falling back to template:", error);
   }
 
-  copyFileSync(template, dbFile);
-  console.log(`Initialized database at ${dbFile}`);
+  copyTemplate();
+
+  if (!(await hasUsersTable())) {
+    throw new Error(`Database initialization failed for ${dbFile}`);
+  }
 }
 
 main().catch((error) => {

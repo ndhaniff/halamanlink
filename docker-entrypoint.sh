@@ -6,6 +6,7 @@ DB_DIR="$(dirname "$DB_FILE")"
 
 mkdir -p "$DB_DIR" /app/data/uploads/avatars
 
+echo "Checking database at $DB_FILE"
 node /app/scripts/init-db.mjs
 
 exec node ./dist/server/entry.mjs

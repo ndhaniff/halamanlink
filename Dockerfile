@@ -6,13 +6,14 @@ ARG APP_URL=http://localhost:4321
 
 ENV APP_DOMAIN=$APP_DOMAIN
 ENV APP_URL=$APP_URL
-ENV ASTRO_DATABASE_FILE=/tmp/astro-build.db
+# Must match runtime path — Astro DB bakes this into the built server bundle.
+ENV ASTRO_DATABASE_FILE=/app/data/content.db
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN mkdir -p /tmp && npm run build
+RUN mkdir -p /app/data && npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -26,7 +27,10 @@ ENV UPLOAD_DIR=/app/data/uploads
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
-COPY --from=build /tmp/astro-build.db /app/db-init/content.db
+COPY --from=build /app/data/content.db /app/db-init/content.db
+COPY --from=build /app/db ./db
+COPY --from=build /app/astro.config.mjs ./astro.config.mjs
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY scripts/init-db.mjs /app/scripts/init-db.mjs
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
