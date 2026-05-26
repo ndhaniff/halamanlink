@@ -52,6 +52,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     body.icon !== undefined && String(body.icon).trim()
       ? sanitizeLinkIcon(body.icon)
       : suggestLinkIcon(url);
+  const openInNewTab = body.openInNewTab !== undefined ? Boolean(body.openInNewTab) : true;
 
   if (!title || !url) return json({ error: "Title and URL are required" }, 400);
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -71,6 +72,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     url,
     icon,
     sortOrder: links.length,
+    openInNewTab,
   });
 
   return json({ id }, 201);
@@ -99,6 +101,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   }
   if (body.icon !== undefined) updates.icon = sanitizeLinkIcon(body.icon);
   if (body.isActive !== undefined) updates.isActive = Boolean(body.isActive);
+  if (body.openInNewTab !== undefined) updates.openInNewTab = Boolean(body.openInNewTab);
 
   await updateLink(linkId, updates);
   return json({ ok: true });

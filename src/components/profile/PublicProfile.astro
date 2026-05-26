@@ -122,6 +122,8 @@ const editorialName = theme.id === "cream" || theme.id === "clay";
           <li>
             <a
               href={`/r/${link.id}`}
+              target={link.openInNewTab !== false ? "_blank" : undefined}
+              rel={link.openInNewTab !== false ? "noopener noreferrer" : undefined}
               class="flex w-full items-center gap-3.5 px-[18px] py-4 text-left text-[14.5px] font-medium transition hover:scale-[1.01]"
               style={{
                 background: theme.btnBg,

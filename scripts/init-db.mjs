@@ -23,6 +23,18 @@ async function hasUsersTable() {
   }
 }
 
+async function linksHasOpenInNewTab() {
+  const client = createClient({ url: `file:${dbFile}` });
+  try {
+    const result = await client.execute("PRAGMA table_info(Links)");
+    return result.rows.some((row) => row.name === "openInNewTab");
+  } catch {
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
 function copyTemplate() {
   if (!existsSync(template)) {
     throw new Error(`Database template missing at ${template}`);
@@ -41,7 +53,12 @@ function pushSchema() {
 
 async function main() {
   if (await hasUsersTable()) {
-    console.log(`Database ready at ${dbFile}`);
+    if (!(await linksHasOpenInNewTab())) {
+      console.log("Applying database schema updates...");
+      pushSchema();
+    } else {
+      console.log(`Database ready at ${dbFile}`);
+    }
     return;
   }
 

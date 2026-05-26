@@ -9,6 +9,7 @@ interface Props {
     url: string;
     icon: string;
     isActive: boolean;
+    openInNewTab: boolean;
     sortOrder: number;
   }>;
   plan: "free" | "pro";
@@ -36,6 +37,10 @@ const urlIconRules = getUrlIconRulesForClient();
       </div>
     </div>
     <button type="submit" class="hl-btn hl-btn-primary px-4 py-2.5 text-[13px]">New link</button>
+    <label class="flex items-center gap-1.5 self-end pb-2.5 text-xs" style="color: var(--hl-ink-2);">
+      <input id="new-open-tab" type="checkbox" checked />
+      New tab
+    </label>
   </form>
 
   <p id="link-error" class="mb-4 hidden text-sm" style="color: #b91c1c;"></p>
@@ -58,6 +63,10 @@ const urlIconRules = getUrlIconRulesForClient();
           <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
             <input type="checkbox" class="link-active" checked={link.isActive} />
             Active
+          </label>
+          <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
+            <input type="checkbox" class="link-new-tab" checked={link.openInNewTab ?? true} />
+            New tab
           </label>
           <button type="button" class="save-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
           <button type="button" class="delete-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
@@ -162,6 +171,7 @@ const urlIconRules = getUrlIconRulesForClient();
         url: item.querySelector(".link-url")?.value,
         icon: item.querySelector(".link-icon")?.value ?? "link",
         isActive: item.querySelector(".link-active")?.checked,
+        openInNewTab: item.querySelector(".link-new-tab")?.checked ?? true,
       }),
     });
     const json = await res.json();
@@ -202,6 +212,7 @@ const urlIconRules = getUrlIconRulesForClient();
         title: document.getElementById("new-title")?.value,
         url: document.getElementById("new-url")?.value,
         icon: document.getElementById("new-icon")?.value ?? "link",
+        openInNewTab: document.getElementById("new-open-tab")?.checked ?? true,
       }),
     });
     const json = await res.json();

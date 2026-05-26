@@ -215,6 +215,7 @@ export async function createLink(input: {
   url: string;
   icon?: string;
   sortOrder: number;
+  openInNewTab?: boolean;
 }) {
   const id = crypto.randomUUID();
   const now = new Date();
@@ -226,6 +227,7 @@ export async function createLink(input: {
     icon: input.icon?.trim() ?? "",
     sortOrder: input.sortOrder,
     isActive: true,
+    openInNewTab: input.openInNewTab ?? true,
     createdAt: now,
     updatedAt: now,
   });
@@ -234,7 +236,7 @@ export async function createLink(input: {
 
 export async function updateLink(
   linkId: string,
-  data: Partial<Pick<LinkRecord, "title" | "url" | "icon" | "isActive">>,
+  data: Partial<Pick<LinkRecord, "title" | "url" | "icon" | "isActive" | "openInNewTab">>,
 ) {
   await db
     .update(Links)
