@@ -1,6 +1,6 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
-import AvatarCropEditor from "../../components/dashboard/AvatarCropEditor.astro";
+import AvatarEditorHost from "../../components/dashboard/AvatarEditorHost.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
 import ProfileAvatar from "../../components/ProfileAvatar.astro";
 import { MAX_AVATAR_BYTES, getAvatarSourceUrl } from "../../lib/uploads";
@@ -224,7 +224,7 @@ const avatarHasSource = Boolean(avatarSourceUrl);
     </aside>
   </div>
 
-  <AvatarCropEditor />
+  <AvatarEditorHost />
 </DashboardLayout>
 
 <script define:vars={{ themes, avatarPreview, avatarEditUrl, avatarHasSource, maxAvatarBytes: MAX_AVATAR_BYTES }}>

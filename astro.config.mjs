@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 
 import node from '@astrojs/node';
+import react from '@astrojs/react';
 import db from '@astrojs/db';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -25,7 +26,7 @@ export default defineConfig({
     mode: 'standalone'
   }),
 
-  integrations: [db()],
+  integrations: [db(), react()],
 
   // Astro 6 CSRF check — required behind Traefik/Coolify (fixes POST 403 on /api/*)
   security: {
