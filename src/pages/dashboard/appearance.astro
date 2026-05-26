@@ -177,24 +177,37 @@ const initials = getInitials(profile.displayName);
     avatarStatus?.classList.remove("hidden");
     if (avatarStatus) avatarStatus.textContent = "Uploading…";
 
-    const body = new FormData();
-    body.append("avatar", file);
+    let succeeded = false;
+    try {
+      const body = new FormData();
+      body.append("avatar", file);
 
-    const res = await fetch("/api/avatar", { method: "POST", body });
-    const json = await res.json();
+      const res = await fetch("/api/avatar", { method: "POST", body });
+      const json = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      if (avatarStatus) avatarStatus.textContent = "";
-      avatarStatus?.classList.add("hidden");
+      if (!res.ok) {
+        if (errorEl) {
+          errorEl.textContent = json.error || "Upload failed";
+          errorEl.classList.remove("hidden");
+        }
+        avatarFile.value = "";
+        return;
+      }
+
+      succeeded = true;
+      window.location.reload();
+    } catch {
       if (errorEl) {
-        errorEl.textContent = json.error || "Upload failed";
+        errorEl.textContent = "Upload failed. Check your connection and try again.";
         errorEl.classList.remove("hidden");
       }
       avatarFile.value = "";
-      return;
+    } finally {
+      if (!succeeded) {
+        if (avatarStatus) avatarStatus.textContent = "";
+        avatarStatus?.classList.add("hidden");
+      }
     }
-
-    window.location.reload();
   });
 
   avatarRemove?.addEventListener("click", async () => {

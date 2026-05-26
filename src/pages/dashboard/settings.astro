@@ -6,7 +6,7 @@ import {
   getProfileByUserId,
   getUserPlan,
 } from "../../lib/db-queries";
-import { getPublicProfileUrl } from "../../lib/app-env";
+import { getAppDomain, getPublicProfileUrl } from "../../lib/app-env";
 
 export const prerender = false;
 
@@ -17,6 +17,7 @@ if (!profile) return Astro.redirect("/signup");
 const plan = await getUserPlan(user.id);
 const customDomain = await getCustomDomainByProfileId(profile.id);
 const subdomainUrl = getPublicProfileUrl(profile.slug);
+const appDomain = getAppDomain();
 ---
 
 <DashboardLayout title="Settings" active="settings" showPreview={false}>
@@ -81,7 +82,7 @@ const subdomainUrl = getPublicProfileUrl(profile.slug);
   </div>
 </DashboardLayout>
 
-<script define:vars={{ appDomain, customDomain }}>
+<script define:vars={{ appDomain }}>
   document.getElementById("slug-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const errorEl = document.getElementById("slug-error");

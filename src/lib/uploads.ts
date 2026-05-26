@@ -31,13 +31,17 @@ export async function ensureAvatarDir(): Promise<void> {
 }
 
 export function validateAvatarFile(file: File): { ext: string } | { error: string } {
-  if (!file.type || !ALLOWED_TYPES.has(file.type)) {
+  const extFromName = path.extname(file.name).replace(/^\./, "").toLowerCase();
+  const extFromType = file.type ? ALLOWED_TYPES.get(file.type) : undefined;
+  const ext = extFromType ?? (["jpg", "jpeg", "png", "webp", "gif"].includes(extFromName) ? (extFromName === "jpeg" ? "jpg" : extFromName) : undefined);
+
+  if (!ext) {
     return { error: "Please upload a JPG, PNG, WebP, or GIF image." };
   }
   if (file.size > MAX_AVATAR_BYTES) {
     return { error: "Image must be 2 MB or smaller." };
   }
-  return { ext: ALLOWED_TYPES.get(file.type)! };
+  return { ext };
 }
 
 export async function saveAvatar(profileId: string, file: File): Promise<{ url: string } | { error: string }> {
