@@ -1,0 +1,152 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Wordmark from "../components/Wordmark.astro";
+
+interface Props {
+  mode: "login" | "signup";
+}
+
+const { mode } = Astro.props;
+const isSignup = mode === "signup";
+---
+
+<BaseLayout title={`${isSignup ? "Sign up" : "Log in"} · Halamanlink`}>
+  <div class="hl-auth-split" style="background: var(--hl-bg);">
+    <div
+      class="hl-auth-brand hl-grain relative hidden flex-col justify-between overflow-hidden border-r p-11 md:flex"
+      style="background: var(--hl-sage-soft); border-color: var(--hl-line);"
+    >
+      <div
+        aria-hidden="true"
+        class="absolute rounded-full blur-[80px]"
+        style="top: -120px; right: -80px; width: 360px; height: 360px; background: var(--hl-sage); opacity: 0.35;"
+      ></div>
+      <Wordmark size={15} />
+      <div class="relative">
+        <div class="hl-eyebrow" style="color: var(--hl-sage-deep);">
+          {isSignup ? "A new garden of links" : "Welcome back"}
+        </div>
+        <h2 class="hl-display m-0 mt-3 text-[56px] leading-none tracking-tight">
+          {
+            isSignup ? (
+              <>
+                Plant your<br /><em class="hl-italic">corner of the web.</em>
+              </>
+            ) : (
+              <>
+                Pick up where<br /><em class="hl-italic">you left off.</em>
+              </>
+            )
+          }
+        </h2>
+        <p class="mt-4 max-w-[360px] text-sm leading-relaxed" style="color: var(--hl-ink-2);">
+          {
+            isSignup
+              ? "Your subdomain is yours in seconds. Five themes, no setup, no tracking pixels."
+              : "Your links, themes and analytics are right where you left them."
+          }
+        </p>
+      </div>
+      <div class="relative flex gap-3.5 text-xs" style="color: var(--hl-ink-3);">
+        <span>halamanlink.app</span><span>·</span><span>v2.4 — soft launch</span>
+      </div>
+    </div>
+
+    <div class="relative flex flex-col justify-center px-5 py-11 md:px-16">
+      <div class="absolute left-5 top-5 md:hidden">
+        <Wordmark size={14} />
+      </div>
+      <div class="mx-auto mt-10 w-full max-w-[380px] md:mx-0 md:mt-0">
+        <h1 class="hl-display m-0 text-[40px] tracking-tight">
+          {isSignup ? "Create your page" : "Sign in"}
+        </h1>
+        <p class="mt-2 text-[13.5px]" style="color: var(--hl-ink-2);">
+          {
+            isSignup ? (
+              <>Already have one? <a href="/login" style="color: var(--hl-sage-deep);">Sign in →</a></>
+            ) : (
+              <>No account yet? <a href="/signup" style="color: var(--hl-sage-deep);">Start free →</a></>
+            )
+          }
+        </p>
+
+        <form id="auth-form" class="mt-7 flex flex-col gap-3.5">
+          {
+            isSignup && (
+              <>
+                <div>
+                  <label class="hl-label" for="name">Name</label>
+                  <input id="name" name="name" required class="hl-input" />
+                </div>
+                <div>
+                  <label class="hl-label" for="slug">Choose your link</label>
+                  <div
+                    class="flex overflow-hidden rounded-[var(--hl-radius)] border"
+                    style="border-color: var(--hl-line-2); background: var(--hl-bg);"
+                  >
+                    <input id="slug" name="slug" placeholder="your-name" class="hl-input flex-1 border-0 bg-transparent" />
+                    <span
+                      class="grid place-items-center border-l px-3.5 text-[13px]"
+                      style="border-color: var(--hl-line); background: var(--hl-bg-2); color: var(--hl-ink-3); font-family: var(--hl-font-mono);"
+                    >
+                      .halamanlink.app
+                    </span>
+                  </div>
+                </div>
+              </>
+            )
+          }
+          <div>
+            <label class="hl-label" for="email">Email</label>
+            <input id="email" name="email" type="email" required class="hl-input" />
+          </div>
+          <div>
+            <label class="hl-label" for="password">Password</label>
+            <input id="password" name="password" type="password" minlength={isSignup ? 6 : undefined} required class="hl-input" />
+          </div>
+          <p id="error" class="hidden text-sm" style="color: #b91c1c;"></p>
+          <button type="submit" class="hl-btn hl-btn-primary mt-1.5 w-full justify-center py-3.5">
+            {isSignup ? "Plant my page" : "Sign in"}
+          </button>
+        </form>
+
+        {!isSignup && (
+          <p class="mt-6 text-center text-sm" style="color: var(--hl-ink-3);">
+            Demo: demo@halamanlink.dev / demo1234
+          </p>
+        )}
+
+        <p class="mt-6 text-[11.5px] leading-relaxed" style="color: var(--hl-ink-3);">
+          By continuing you agree to our terms and privacy notice. We don't sell visitor data, ever.
+        </p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ isSignup }}>
+  const form = document.getElementById("auth-form");
+  const errorEl = document.getElementById("error");
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl?.classList.add("hidden");
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    const endpoint = isSignup ? "/api/auth/signup" : "/api/auth/login";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      if (errorEl) {
+        errorEl.textContent = json.error || "Something went wrong";
+        errorEl.classList.remove("hidden");
+      }
+      return;
+    }
+    window.location.href = "/dashboard";
+  });
+</script>

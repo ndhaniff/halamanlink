@@ -1,0 +1,246 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DashHeader from "../../components/dashboard/DashHeader.astro";
+import {
+  getProfileByUserId,
+  getUserPlan,
+} from "../../lib/db-queries";
+import { getAvailableThemes, getInitials, parseTheme } from "../../lib/themes";
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+if (!profile) return Astro.redirect("/signup");
+
+const plan = await getUserPlan(user.id);
+const themes = getAvailableThemes(plan);
+const currentTheme = parseTheme(profile.theme);
+const previewUrl = `/p/${profile.slug}`;
+const avatarPreview = profile.avatarUrl || "";
+const initials = getInitials(profile.displayName);
+---
+
+<DashboardLayout title="Appearance" active="appearance" showPreview={false}>
+  <DashHeader
+    title="Appearance"
+    subtitle="Choose a theme, then fine-tune the details. Changes preview live."
+  />
+  <div class="grid md:grid-cols-[1fr_380px]" style="height: calc(100vh - 86px);">
+    <div class="overflow-auto p-7">
+      <div class="mb-7">
+        <div class="hl-eyebrow">01 — Theme</div>
+        <div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {
+            themes.map((theme) => (
+              <label class="cursor-pointer">
+                <input
+                  type="radio"
+                  name="theme"
+                  value={theme.id}
+                  checked={currentTheme.id === theme.id}
+                  class="peer sr-only"
+                />
+                <div
+                  class="overflow-hidden rounded-xl border-2 border-transparent p-0 peer-checked:border-[var(--hl-sage-deep)]"
+                  style="outline-offset: 4px;"
+                >
+                  <div
+                    class="flex h-[132px] flex-col justify-between p-4"
+                    style={{
+                      background: theme.bg,
+                      border: `1px solid ${theme.btnBorder}`,
+                      borderRadius: "12px",
+                    }}
+                  >
+                    <div class="flex gap-1">
+                      {theme.swatch.map((s) => (
+                        <span
+                          class="h-4 w-4 rounded-full border border-black/5"
+                          style={{ background: s }}
+                        ></span>
+                      ))}
+                    </div>
+                    <div
+                      class="px-2.5 py-1.5 text-[11px]"
+                      style={{
+                        background: theme.btnBg,
+                        color: theme.btnFg,
+                        border: `1px solid ${theme.btnBorder}`,
+                        borderRadius: `${Math.min(theme.radius, 10)}px`,
+                        fontFamily: theme.font,
+                      }}
+                    >
+                      Sample link
+                    </div>
+                  </div>
+                  <div class="mt-2.5 flex items-center justify-between text-[13px] font-medium">
+                    {theme.name}
+                    {currentTheme.id === theme.id && <span style="color: var(--hl-sage-deep);">✓</span>}
+                  </div>
+                </div>
+              </label>
+            ))
+          }
+        </div>
+      </div>
+
+      <form id="appearance-form" class="hl-card space-y-4 p-5">
+        <div>
+          <label class="hl-label">Avatar</label>
+          <div class="flex flex-wrap items-center gap-4">
+            {
+              avatarPreview ? (
+                <img
+                  id="avatar-preview"
+                  src={avatarPreview}
+                  alt={profile.displayName}
+                  class="h-20 w-20 rounded-full object-cover"
+                  style="box-shadow: var(--hl-shadow-1);"
+                />
+              ) : (
+                <div
+                  id="avatar-preview-fallback"
+                  class="hl-display grid h-20 w-20 place-items-center rounded-full text-2xl"
+                  style="background: var(--hl-clay); color: var(--hl-bg);"
+                >
+                  {initials}
+                </div>
+              )
+            }
+            <div class="flex flex-col gap-2">
+              <label class="hl-btn hl-btn-soft w-fit cursor-pointer px-3 py-2 text-[13px]">
+                Upload photo
+                <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" />
+              </label>
+              {
+                avatarPreview && (
+                  <button type="button" id="avatar-remove" class="hl-btn hl-btn-ghost w-fit px-3 py-2 text-[13px]">
+                    Remove photo
+                  </button>
+                )
+              }
+              <p class="text-[11.5px]" style="color: var(--hl-ink-3);">JPG, PNG, WebP or GIF · max 2 MB</p>
+            </div>
+          </div>
+          <p id="avatar-status" class="mt-2 hidden text-sm" style="color: var(--hl-sage-deep);"></p>
+        </div>
+        <div>
+          <label class="hl-label" for="displayName">Display name</label>
+          <input id="displayName" value={profile.displayName} class="hl-input" />
+        </div>
+        <div>
+          <label class="hl-label" for="bio">Bio</label>
+          <textarea id="bio" rows="3" class="hl-input">{profile.bio}</textarea>
+        </div>
+        <div>
+          <label class="hl-label" for="avatarUrl">Or paste image URL</label>
+          <input id="avatarUrl" value={profile.avatarUrl.split("?")[0]} placeholder="https://..." class="hl-input" />
+        </div>
+        <label class="flex items-center gap-2 text-sm">
+          <input id="isPublished" type="checkbox" checked={profile.isPublished} />
+          Page is published
+        </label>
+        <p id="error" class="hidden text-sm" style="color: #b91c1c;"></p>
+        <p id="success" class="hidden text-sm" style="color: var(--hl-sage-deep);">Saved!</p>
+        <button type="submit" class="hl-btn hl-btn-primary px-4 py-2 text-sm">Publish changes</button>
+      </form>
+    </div>
+
+    <aside class="hidden border-l p-5 md:flex md:flex-col" style="border-color: var(--hl-line); background: var(--hl-bg);">
+      <div class="hl-eyebrow mb-3 flex justify-between">
+        <span>Preview</span>
+        <span class="hl-mono" style="color: var(--hl-ink-3);">{currentTheme.name}</span>
+      </div>
+      <div class="hl-phone-frame flex-1">
+        <div class="hl-phone-screen">
+          <iframe src={previewUrl} title="Preview" class="h-full w-full border-0"></iframe>
+        </div>
+      </div>
+    </aside>
+  </div>
+</DashboardLayout>
+
+<script define:vars={{ themes }}>
+  const form = document.getElementById("appearance-form");
+  const errorEl = document.getElementById("error");
+  const successEl = document.getElementById("success");
+  const avatarFile = document.getElementById("avatar-file");
+  const avatarRemove = document.getElementById("avatar-remove");
+  const avatarStatus = document.getElementById("avatar-status");
+
+  avatarFile?.addEventListener("change", async () => {
+    const file = avatarFile.files?.[0];
+    if (!file) return;
+
+    errorEl?.classList.add("hidden");
+    avatarStatus?.classList.remove("hidden");
+    if (avatarStatus) avatarStatus.textContent = "Uploading…";
+
+    const body = new FormData();
+    body.append("avatar", file);
+
+    const res = await fetch("/api/avatar", { method: "POST", body });
+    const json = await res.json();
+
+    if (!res.ok) {
+      if (avatarStatus) avatarStatus.textContent = "";
+      avatarStatus?.classList.add("hidden");
+      if (errorEl) {
+        errorEl.textContent = json.error || "Upload failed";
+        errorEl.classList.remove("hidden");
+      }
+      avatarFile.value = "";
+      return;
+    }
+
+    window.location.reload();
+  });
+
+  avatarRemove?.addEventListener("click", async () => {
+    errorEl?.classList.add("hidden");
+    const res = await fetch("/api/avatar", { method: "DELETE" });
+    const json = await res.json();
+    if (!res.ok) {
+      if (errorEl) {
+        errorEl.textContent = json.error || "Remove failed";
+        errorEl.classList.remove("hidden");
+      }
+      return;
+    }
+    window.location.reload();
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl?.classList.add("hidden");
+    successEl?.classList.add("hidden");
+
+    const themeId = document.querySelector('input[name="theme"]:checked')?.value;
+    const selectedTheme = themes.find((t) => t.id === themeId);
+
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        displayName: document.getElementById("displayName")?.value,
+        bio: document.getElementById("bio")?.value,
+        avatarUrl: document.getElementById("avatarUrl")?.value,
+        isPublished: document.getElementById("isPublished")?.checked,
+        theme: selectedTheme,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      if (errorEl) {
+        errorEl.textContent = json.error || "Save failed";
+        errorEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    successEl?.classList.remove("hidden");
+    document.querySelector("iframe")?.contentWindow?.location.reload();
+  });
+</script>

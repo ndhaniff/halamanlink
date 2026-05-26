@@ -1,0 +1,162 @@
+---
+import type { ThemePreset } from "../../lib/themes";
+import { getInitials, isDarkTheme } from "../../lib/themes";
+import type { LinkRecord } from "../../lib/db-queries";
+
+interface Props {
+  profile: {
+    displayName: string;
+    slug: string;
+    bio: string;
+    avatarUrl: string;
+  };
+  theme: ThemePreset;
+  links: LinkRecord[];
+}
+
+const { profile, theme, links } = Astro.props;
+const dark = isDarkTheme(theme);
+const initials = getInitials(profile.displayName);
+const nameParts = profile.displayName.trim().split(/\s+/);
+const editorialName = theme.id === "cream" || theme.id === "clay";
+---
+
+<div
+  class="relative min-h-screen w-full overflow-hidden"
+  style={{
+    background: theme.bg,
+    color: theme.ink,
+    fontFamily: "var(--hl-font-ui)",
+    padding: "44px 22px 40px",
+  }}
+>
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute rounded-full blur-[50px]"
+    style={{
+      top: "-120px",
+      right: "-80px",
+      width: "280px",
+      height: "280px",
+      background: theme.accent,
+      opacity: dark ? (theme.id === "noir" ? 0.15 : 0.18) : 0.12,
+    }}
+  ></div>
+
+  <div class="relative mx-auto max-w-[380px]">
+    {
+      profile.avatarUrl ? (
+        <img
+          src={profile.avatarUrl}
+          alt={profile.displayName}
+          class="mx-auto mb-4 h-[88px] w-[88px] rounded-full object-cover"
+          style={{
+            boxShadow: dark
+              ? "0 8px 32px rgba(0,0,0,.4)"
+              : "0 8px 32px rgba(40,30,20,.12)",
+          }}
+        />
+      ) : (
+        <div
+          class="mx-auto mb-4 grid h-[88px] w-[88px] place-items-center rounded-full text-[30px]"
+          style={{
+            background: theme.accent,
+            color: theme.bg,
+            fontFamily: theme.font,
+            boxShadow: dark
+              ? "0 8px 32px rgba(0,0,0,.4)"
+              : "0 8px 32px rgba(40,30,20,.12)",
+          }}
+        >
+          {initials}
+        </div>
+      )
+    }
+
+    <h1
+      class="m-0 text-center leading-tight"
+      style={{
+        fontFamily: theme.font,
+        fontSize: editorialName ? "32px" : "22px",
+        fontWeight: 500,
+        letterSpacing: theme.font.includes("display") ? "-0.01em" : "-0.005em",
+      }}
+    >
+      {
+        editorialName && nameParts.length > 1 ? (
+          <>
+            {nameParts[0]}{" "}
+            <em class="hl-italic">{nameParts.slice(1).join(" ")}</em>
+          </>
+        ) : (
+          profile.displayName
+        )
+      }
+    </h1>
+
+    <div
+      class="mt-1.5 text-center text-[13px]"
+      style={{
+        color: theme.muted,
+        fontFamily: theme.id === "noir" ? "var(--hl-font-mono)" : "var(--hl-font-ui)",
+      }}
+    >
+      {theme.id === "noir" ? `> @${profile.slug}` : `@${profile.slug}`}
+    </div>
+
+    {
+      profile.bio && (
+        <p
+          class="mx-auto mb-7 mt-4 max-w-[320px] text-center text-[13.5px] leading-relaxed"
+          style={{ color: theme.muted }}
+        >
+          {profile.bio}
+        </p>
+      )
+    }
+
+    <ul class="flex flex-col gap-2.5">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={`/r/${link.id}`}
+              class="flex w-full items-center gap-3.5 px-[18px] py-4 text-left text-[14.5px] font-medium transition hover:scale-[1.01]"
+              style={{
+                background: theme.btnBg,
+                border: `1px solid ${theme.btnBorder}`,
+                color: theme.btnFg,
+                borderRadius: `${theme.radius}px`,
+                boxShadow: dark
+                  ? "none"
+                  : "0 1px 0 rgba(255,255,255,.4) inset, 0 1px 2px rgba(0,0,0,.04)",
+              }}
+            >
+              <span
+                class="grid h-9 w-9 shrink-0 place-items-center"
+                style={{
+                  borderRadius: `${theme.radius * 0.55}px`,
+                  background: `${theme.accent}${dark ? "22" : "1f"}`,
+                  color: theme.accent,
+                }}
+              >
+                {link.icon || "↗"}
+              </span>
+              <span class="min-w-0 flex-1 truncate">{link.title}</span>
+              <span style={{ color: theme.muted }}>↗</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p
+      class="mt-9 text-center text-xs uppercase tracking-[0.08em] opacity-70"
+      style={{ color: theme.muted }}
+    >
+      <span class="normal-case tracking-normal" style={{ fontFamily: theme.font, fontSize: "12px" }}>
+        made on <em class="hl-italic">halamanlink</em>
+      </span>
+    </p>
+  </div>
+</div>

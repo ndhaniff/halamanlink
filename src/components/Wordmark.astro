@@ -1,0 +1,25 @@
+---
+interface Props {
+  size?: number;
+  color?: string;
+}
+
+const { size = 18, color = "currentColor" } = Astro.props;
+---
+
+<div class="flex items-center gap-2" style={{ color }}>
+  <svg width={size * 1.25} height={size * 1.25} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="9" cy="12" r="5.5" stroke={color} stroke-width="1.6"></circle>
+    <circle cx="15" cy="12" r="5.5" stroke={color} stroke-width="1.6"></circle>
+    <circle cx="12" cy="12" r="1.6" fill={color}></circle>
+  </svg>
+  <span
+    class="hl-display leading-none"
+    style={{
+      fontSize: `${size * 1.35}px`,
+      letterSpacing: "-0.015em",
+    }}
+  >
+    halamanlink
+  </span>
+</div>

@@ -1,0 +1,49 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DashHeader from "../../components/dashboard/DashHeader.astro";
+import LinkEditor from "../../components/dashboard/LinkEditor.astro";
+import {
+  getLinksByProfileId,
+  getProfileByUserId,
+  getUserPlan,
+} from "../../lib/db-queries";
+import { PLAN_LIMITS } from "../../lib/plans";
+import { getInitials } from "../../lib/themes";
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+if (!profile) return Astro.redirect("/signup");
+
+const links = await getLinksByProfileId(profile.id);
+const plan = await getUserPlan(user.id);
+const activeCount = links.filter((l) => l.isActive).length;
+---
+
+<DashboardLayout title="Links" active="links">
+  <DashHeader
+    title="Your links"
+    subtitle={`${links.length} links · ${activeCount} active`}
+  >
+    <a slot="actions" href="/dashboard/appearance" class="hl-btn hl-btn-soft px-3.5 py-2 text-[13px]">
+      Edit profile
+    </a>
+  </DashHeader>
+
+  <div class="hl-card mx-7 mt-7 flex items-center gap-4 p-5">
+    <span
+      class="hl-display grid h-16 w-16 shrink-0 place-items-center rounded-full text-[26px]"
+      style="background: var(--hl-clay); color: var(--hl-bg);"
+    >
+      {getInitials(profile.displayName)}
+    </span>
+    <div class="min-w-0 flex-1">
+      <div class="hl-eyebrow">Header block</div>
+      <div class="hl-display text-[22px]">{profile.displayName}</div>
+      <div class="truncate text-[12.5px]" style="color: var(--hl-ink-2);">{profile.bio || "Add a bio in Appearance"}</div>
+    </div>
+  </div>
+
+  <LinkEditor initialLinks={links} plan={plan} maxLinks={PLAN_LIMITS.free.maxLinks} />
+</DashboardLayout>

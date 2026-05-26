@@ -1,0 +1,19 @@
+services:
+  halamanlink:
+    build: .
+    ports:
+      - "4321:4321"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      APP_URL: ${APP_URL:-http://localhost:4321}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me}
+      ASTRO_DATABASE_FILE: /app/data/content.db
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_PRO_MONTHLY: ${STRIPE_PRICE_PRO_MONTHLY:-}
+    volumes:
+      - halamanlink-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  halamanlink-data:

@@ -1,0 +1,36 @@
+---
+interface Props {
+  daily: Array<{ date: string; clicks: number }>;
+  maxClicks: number;
+}
+
+const { daily, maxClicks } = Astro.props;
+const barMax = maxClicks || 1;
+---
+
+<div class="hl-card p-6">
+  <h3 class="hl-eyebrow mb-4">Clicks per day</h3>
+  {
+    daily.length === 0 ? (
+      <p class="text-sm" style="color: var(--hl-ink-3);">No clicks yet in this period.</p>
+    ) : (
+      <div class="flex h-48 items-end gap-2">
+        {
+          daily.map((day) => (
+            <div class="flex flex-1 flex-col items-center gap-2">
+              <div
+                class="w-full rounded-t transition-all"
+                style={{
+                  height: `${Math.max(4, (day.clicks / barMax) * 100)}%`,
+                  background: "var(--hl-sage-deep)",
+                }}
+                title={`${day.clicks} clicks`}
+              ></div>
+              <span class="text-[10px]" style="color: var(--hl-ink-3);">{day.date.slice(5)}</span>
+            </div>
+          ))
+        }
+      </div>
+    )
+  }
+</div>

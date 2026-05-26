@@ -1,0 +1,35 @@
+---
+import ProfileLayout from "../../layouts/ProfileLayout.astro";
+import PublicProfile from "../../components/profile/PublicProfile.astro";
+import { getActiveLinksByProfileId, getProfileBySlug } from "../../lib/db-queries";
+import { parseTheme } from "../../lib/themes";
+import { RESERVED_SLUGS } from "../../lib/constants";
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug || RESERVED_SLUGS.includes(slug)) {
+  return Astro.redirect("/404");
+}
+
+const profile = await getProfileBySlug(slug);
+if (!profile || !profile.isPublished) {
+  return Astro.rewrite("/404");
+}
+
+const links = await getActiveLinksByProfileId(profile.id);
+const theme = parseTheme(profile.theme);
+---
+
+<ProfileLayout title={`${profile.displayName} · Halamanlink`}>
+  <PublicProfile
+    profile={{
+      displayName: profile.displayName,
+      slug: profile.slug,
+      bio: profile.bio,
+      avatarUrl: profile.avatarUrl,
+    }}
+    theme={theme}
+    links={links}
+  />
+</ProfileLayout>

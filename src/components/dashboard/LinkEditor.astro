@@ -1,0 +1,195 @@
+---
+interface Props {
+  initialLinks: Array<{
+    id: string;
+    title: string;
+    url: string;
+    icon: string;
+    isActive: boolean;
+    sortOrder: number;
+  }>;
+  plan: "free" | "pro";
+  maxLinks: number;
+}
+
+const { initialLinks, plan, maxLinks } = Astro.props;
+---
+
+<div class="overflow-auto p-7" style="height: calc(100vh - 86px);">
+  <form id="add-link-form" class="mb-5 flex flex-wrap gap-2">
+    <input id="new-title" placeholder="Link title" required class="hl-input min-w-[140px] flex-1" />
+    <input id="new-url" placeholder="https://example.com" required class="hl-input min-w-[200px] flex-[2]" />
+    <input id="new-icon" placeholder="Icon" maxlength="4" class="hl-input w-20" />
+    <button type="submit" class="hl-btn hl-btn-primary px-4 py-2 text-[13px]">New link</button>
+  </form>
+
+  <p id="link-error" class="mb-4 hidden text-sm" style="color: #b91c1c;"></p>
+
+  <div id="links-list" class="flex flex-col gap-2.5">
+    {
+      initialLinks.map((link) => (
+        <div
+          class="link-item hl-card flex items-center gap-3.5 p-3.5"
+          data-id={link.id}
+          draggable="true"
+          style={{ opacity: link.isActive ? 1 : 0.62 }}
+        >
+          <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
+          <span
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] text-lg"
+            style="background: var(--hl-sage-soft); color: var(--hl-sage-deep);"
+          >
+            {link.icon || "↗"}
+          </span>
+          <div class="min-w-0 flex-1">
+            <input class="link-title hl-input mb-1 py-1.5 text-sm font-medium" value={link.title} />
+            <input class="link-url hl-input py-1.5 text-[11.5px]" value={link.url} style="font-family: var(--hl-font-mono); color: var(--hl-ink-3);" />
+          </div>
+          <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
+            <input type="checkbox" class="link-active" checked={link.isActive} />
+            Active
+          </label>
+          <button type="button" class="save-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
+          <button type="button" class="delete-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
+        </div>
+      ))
+    }
+  </div>
+
+  {
+    initialLinks.length === 0 && (
+      <p class="py-8 text-center text-sm" style="color: var(--hl-ink-3);">No links yet. Add your first link above.</p>
+    )
+  }
+
+  {
+    plan === "free" && initialLinks.length >= maxLinks && (
+      <div
+        class="hl-card mt-4 flex items-center gap-3 p-3.5"
+        style="background: var(--hl-clay-soft); border-color: oklch(0.73 0.082 50 / 0.25);"
+      >
+        <div class="flex-1 text-[12.5px]">
+          You're using <b>{initialLinks.length} of {maxLinks}</b> free links. Upgrade for unlimited links.
+        </div>
+        <a href="/dashboard/billing" class="hl-btn hl-btn-sage px-3 py-1.5 text-xs">Upgrade</a>
+      </div>
+    )
+  }
+</div>
+
+<script define:vars={{ plan }}>
+  const list = document.getElementById("links-list");
+  const errorEl = document.getElementById("link-error");
+  const addForm = document.getElementById("add-link-form");
+
+  function showError(msg) {
+    if (!errorEl) return;
+    errorEl.textContent = msg;
+    errorEl.classList.remove("hidden");
+  }
+
+  function hideError() {
+    errorEl?.classList.add("hidden");
+  }
+
+  async function saveLink(item) {
+    const id = item.dataset.id;
+    const res = await fetch("/api/links", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        title: item.querySelector(".link-title")?.value,
+        url: item.querySelector(".link-url")?.value,
+        icon: item.querySelector(".link-icon")?.value ?? "",
+        isActive: item.querySelector(".link-active")?.checked,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) showError(json.error || "Save failed");
+    else hideError();
+  }
+
+  list?.addEventListener("click", async (e) => {
+    const target = e.target;
+    const item = target.closest(".link-item");
+    if (!item) return;
+
+    if (target.classList.contains("save-link")) await saveLink(item);
+
+    if (target.classList.contains("delete-link")) {
+      const res = await fetch("/api/links", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.dataset.id }),
+      });
+      if (res.ok) {
+        item.remove();
+        await persistOrder();
+      } else {
+        const json = await res.json();
+        showError(json.error || "Delete failed");
+      }
+    }
+  });
+
+  addForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError();
+    const res = await fetch("/api/links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: document.getElementById("new-title")?.value,
+        url: document.getElementById("new-url")?.value,
+        icon: document.getElementById("new-icon")?.value,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      showError(json.error || "Failed to add link");
+      return;
+    }
+    window.location.reload();
+  });
+
+  let draggedItem = null;
+  list?.addEventListener("dragstart", (e) => {
+    draggedItem = e.target.closest(".link-item");
+    if (draggedItem) draggedItem.style.opacity = "0.5";
+  });
+  list?.addEventListener("dragend", async () => {
+    if (draggedItem) draggedItem.style.opacity = "";
+    draggedItem = null;
+    await persistOrder();
+  });
+  list?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const afterElement = getDragAfterElement(list, e.clientY);
+    if (!draggedItem) return;
+    if (afterElement == null) list.appendChild(draggedItem);
+    else list.insertBefore(draggedItem, afterElement);
+  });
+
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll(".link-item:not([style*='opacity: 0.5'])")];
+    return draggableElements.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset, element: child };
+        return closest;
+      },
+      { offset: Number.NEGATIVE_INFINITY, element: null },
+    ).element;
+  }
+
+  async function persistOrder() {
+    const order = [...list.querySelectorAll(".link-item")].map((el) => el.dataset.id);
+    await fetch("/api/links", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+  }
+</script>

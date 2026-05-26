@@ -1,0 +1,7 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+@import "tailwindcss";
+@import "./design.css";
+
+@source "../components/**/*.{astro,html,js,jsx,ts,tsx}";
+@source "../layouts/**/*.{astro,html,js,jsx,ts,tsx}";
+@source "../pages/**/*.{astro,html,js,jsx,ts,tsx}";

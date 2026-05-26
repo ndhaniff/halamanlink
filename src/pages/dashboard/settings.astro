@@ -1,0 +1,130 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DashHeader from "../../components/dashboard/DashHeader.astro";
+import {
+  getCustomDomainByProfileId,
+  getProfileByUserId,
+  getUserPlan,
+} from "../../lib/db-queries";
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+if (!profile) return Astro.redirect("/signup");
+
+const plan = await getUserPlan(user.id);
+const customDomain = await getCustomDomainByProfileId(profile.id);
+const appDomain = import.meta.env.APP_DOMAIN || "localhost";
+const appUrl = import.meta.env.APP_URL || "http://localhost:4321";
+const subdomainUrl =
+  appDomain === "localhost"
+    ? `${appUrl}/p/${profile.slug}`
+    : `https://${profile.slug}.${appDomain}`;
+---
+
+<DashboardLayout title="Settings" active="settings" showPreview={false}>
+  <DashHeader title="Settings" subtitle="Manage your username and custom domain." />
+
+  <div class="max-w-[760px] space-y-5 overflow-auto p-7" style="height: calc(100vh - 86px);">
+    <section class="hl-card p-6">
+      <div class="hl-eyebrow">Slug</div>
+      <h3 class="hl-display m-0 text-[22px]">Your public URL</h3>
+      <p class="mt-2 text-sm" style="color: var(--hl-ink-2);">
+        <a href={subdomainUrl} target="_blank" class="hl-mono underline">{subdomainUrl}</a>
+      </p>
+      <form id="slug-form" class="mt-4 flex flex-wrap gap-2">
+        <input id="slug" value={profile.slug} pattern="[a-z0-9-]+" class="hl-input max-w-xs" />
+        <button type="submit" class="hl-btn hl-btn-primary px-4 py-2 text-sm">Update slug</button>
+      </form>
+      <p id="slug-error" class="mt-2 hidden text-sm" style="color: #b91c1c;"></p>
+      <p id="slug-success" class="mt-2 hidden text-sm" style="color: var(--hl-sage-deep);">Slug updated!</p>
+    </section>
+
+    <section class="hl-card p-6">
+      <div class="hl-eyebrow">Domain</div>
+      <h3 class="hl-display m-0 text-[22px]">Custom domain</h3>
+      {
+        plan === "pro" ? (
+          <>
+            <p class="mt-2 text-sm" style="color: var(--hl-ink-2);">
+              Connect your own domain. Verification is manual for now.
+            </p>
+            <form id="domain-form" class="mt-4 flex flex-wrap gap-2">
+              <input
+                id="domain"
+                placeholder="links.yourdomain.com"
+                value={customDomain?.domain ?? ""}
+                class="hl-input min-w-[240px] flex-1"
+              />
+              <button type="submit" class="hl-btn hl-btn-primary px-4 py-2 text-sm">Save domain</button>
+            </form>
+            <p id="domain-error" class="mt-2 hidden text-sm" style="color: #b91c1c;"></p>
+            {
+              customDomain && (
+                <div class="mt-4 rounded-[var(--hl-radius)] p-4 text-sm" style="background: var(--hl-bg-2);">
+                  <p>Saved domain: <strong>{customDomain.domain}</strong></p>
+                  <p class="mt-1" style="color: var(--hl-ink-2);">
+                    Verified: {customDomain.verified ? "Yes" : "No (pending)"}
+                  </p>
+                  <p class="hl-mono mt-2 text-xs">CNAME → app.{appDomain}</p>
+                  <p class="hl-mono text-xs">
+                    TXT _halamanlink.{customDomain.domain} → {customDomain.verificationToken}
+                  </p>
+                </div>
+              )
+            }
+          </>
+        ) : (
+          <p class="mt-2 text-sm" style="color: var(--hl-ink-2);">
+            Custom domains are available on the Pro plan. <a href="/dashboard/billing" style="color: var(--hl-sage-deep);">Upgrade</a>
+          </p>
+        )
+      }
+    </section>
+  </div>
+</DashboardLayout>
+
+<script define:vars={{ appDomain, customDomain }}>
+  document.getElementById("slug-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById("slug-error");
+    const successEl = document.getElementById("slug-success");
+    errorEl?.classList.add("hidden");
+    successEl?.classList.add("hidden");
+
+    const slug = document.getElementById("slug")?.value;
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      errorEl.textContent = json.error || "Update failed";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+    successEl?.classList.remove("hidden");
+  });
+
+  document.getElementById("domain-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById("domain-error");
+    errorEl?.classList.add("hidden");
+
+    const domain = document.getElementById("domain")?.value;
+    const res = await fetch("/api/domains", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      errorEl.textContent = json.error || "Save failed";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+    window.location.reload();
+  });
+</script>

@@ -1,0 +1,77 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DashHeader from "../../components/dashboard/DashHeader.astro";
+import AnalyticsChart from "../../components/dashboard/AnalyticsChart.astro";
+import {
+  getAnalyticsSummary,
+  getProfileByUserId,
+  getUserPlan,
+} from "../../lib/db-queries";
+import { getAnalyticsDays } from "../../lib/plans";
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+if (!profile) return Astro.redirect("/signup");
+
+const plan = await getUserPlan(user.id);
+const days = getAnalyticsDays(plan);
+const analytics = await getAnalyticsSummary(profile.id, days);
+const maxClicks = Math.max(...analytics.daily.map((d) => d.clicks), 0);
+---
+
+<DashboardLayout title="Analytics" active="analytics" showPreview={false}>
+  <DashHeader
+    title="Analytics"
+    subtitle="Privacy-safe clicks. IPs are hashed; nothing leaves your container."
+  />
+
+  <div class="overflow-auto p-7" style="height: calc(100vh - 86px);">
+    <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        [
+          { label: "Total clicks", value: String(analytics.totalClicks) },
+          { label: "Active links", value: String(analytics.perLink.length) },
+          { label: "Period", value: `${days} days` },
+          { label: "Plan", value: plan },
+        ].map((stat) => (
+          <div class="hl-card p-4">
+            <div class="hl-eyebrow">{stat.label}</div>
+            <div class="hl-display mt-1.5 text-4xl leading-none">{stat.value}</div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-4">
+      <AnalyticsChart daily={analytics.daily} maxClicks={maxClicks} />
+    </div>
+
+    <div class="hl-card mt-4 p-5">
+      <div class="hl-eyebrow">Rank</div>
+      <h3 class="hl-display m-0 text-[22px]">Top links</h3>
+      {
+        analytics.perLink.length === 0 ? (
+          <p class="mt-3 text-sm" style="color: var(--hl-ink-3);">No link data yet.</p>
+        ) : (
+          <ul class="mt-4 space-y-2.5">
+            {
+              analytics.perLink
+                .sort((a, b) => b.clicks - a.clicks)
+                .map((link, i) => (
+                  <li class="flex items-center gap-3">
+                    <span class="hl-mono w-6 text-right text-[11px]" style="color: var(--hl-ink-3);">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div class="min-w-0 flex-1 truncate text-sm">{link.title}</div>
+                    <span class="hl-num text-sm font-medium">{link.clicks}</span>
+                  </li>
+                ))
+            }
+          </ul>
+        )
+      }
+    </div>
+  </div>
+</DashboardLayout>

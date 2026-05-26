@@ -1,0 +1,133 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DashHeader from "../../components/dashboard/DashHeader.astro";
+import {
+  getProfileByUserId,
+  getSubscriptionByUserId,
+  countLinksByProfileId,
+} from "../../lib/db-queries";
+import { isStripeConfigured } from "../../lib/stripe";
+import { PLAN_LIMITS } from "../../lib/plans";
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+const subscription = await getSubscriptionByUserId(user.id);
+const plan = subscription?.plan === "pro" && subscription.status === "active" ? "pro" : "free";
+const stripeReady = isStripeConfigured();
+const linkCount = profile ? await countLinksByProfileId(profile.id) : 0;
+const success = Astro.url.searchParams.get("success");
+const canceled = Astro.url.searchParams.get("canceled");
+---
+
+<DashboardLayout title="Billing" active="billing" showPreview={false}>
+  <DashHeader title="Billing" subtitle={`Currently on the ${plan} plan.`} />
+
+  <div class="max-w-[980px] overflow-auto p-7" style="height: calc(100vh - 86px);">
+    {
+      success && (
+        <div class="hl-card mb-4 p-4 text-sm" style="background: var(--hl-sage-soft); color: var(--hl-sage-deep);">
+          Payment successful! Your Pro plan should activate shortly.
+        </div>
+      )
+    }
+    {
+      canceled && (
+        <div class="hl-card mb-4 p-4 text-sm" style="background: var(--hl-clay-soft); color: var(--hl-clay-deep);">
+          Checkout was canceled.
+        </div>
+      )
+    }
+
+    <div class="hl-card flex items-center gap-5 p-6">
+      <span
+        class="grid h-14 w-14 place-items-center rounded-2xl"
+        style="background: var(--hl-sage-soft); color: var(--hl-sage-deep);"
+      >
+        ✦
+      </span>
+      <div class="flex-1">
+        <div class="hl-eyebrow">Current plan</div>
+        <div class="flex items-baseline gap-3">
+          <span class="hl-display text-[26px] capitalize">{plan}</span>
+          <span class="text-[13px]" style="color: var(--hl-ink-2);">
+            · {linkCount} links · {plan === "free" ? "5 themes" : "all themes"}
+          </span>
+        </div>
+      </div>
+      {
+        plan === "pro" && subscription?.stripeCustomerId && stripeReady && (
+          <button id="portal-btn" class="hl-btn hl-btn-soft px-3.5 py-2 text-[13px]">Manage billing</button>
+        )
+      }
+    </div>
+
+    <div class="mt-4 grid gap-3.5 md:grid-cols-2">
+      <div class="hl-card p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <span class="hl-eyebrow">Free</span>
+          {plan === "free" && <span class="hl-chip hl-chip-sage text-[10.5px]">current</span>}
+        </div>
+        <div class="hl-display text-[52px] leading-none">
+          $0<span class="text-base" style="color: var(--hl-ink-3);"> /forever</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-[13.5px]" style="color: var(--hl-ink-2);">
+          <li>7 links</li>
+          <li>5 themes — Linen, Sage, Dusk, Clay, Noir</li>
+          <li>7-day analytics</li>
+        </ul>
+      </div>
+
+      <div
+        class="hl-card hl-grain relative p-6"
+        style="background: var(--hl-ink); color: var(--hl-bg); border-color: var(--hl-ink);"
+      >
+        <div class="relative mb-4 flex items-center justify-between">
+          <span class="hl-eyebrow" style="color: oklch(0.78 0.04 60);">Pro</span>
+          <span
+            class="rounded-full px-2.5 py-0.5 text-[10.5px] font-medium uppercase tracking-wide"
+            style="background: var(--hl-clay); color: var(--hl-ink);"
+          >
+            recommended
+          </span>
+        </div>
+        <div class="hl-display relative text-[52px] leading-none">
+          $6<span class="text-base opacity-60"> /mo</span>
+        </div>
+        <ul class="relative mt-4 space-y-2 text-[13.5px]" style="color: oklch(0.78 0.02 60);">
+          <li>Unlimited links</li>
+          <li>All 7 themes + future presets</li>
+          <li>Full analytics history</li>
+          <li>Custom domain</li>
+        </ul>
+        {
+          plan === "free" && stripeReady && (
+            <button id="upgrade-btn" class="hl-btn relative mt-5 w-full justify-center py-3.5" style="background: var(--hl-clay); color: var(--hl-ink);">
+              Upgrade to Pro
+            </button>
+          )
+        }
+        {!stripeReady && (
+          <p class="relative mt-4 text-sm opacity-70">Set STRIPE_* env vars to enable billing.</p>
+        )}
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  document.getElementById("upgrade-btn")?.addEventListener("click", async () => {
+    const res = await fetch("/api/stripe/checkout", { method: "POST" });
+    const json = await res.json();
+    if (json.url) window.location.href = json.url;
+    else alert(json.error || "Checkout failed");
+  });
+
+  document.getElementById("portal-btn")?.addEventListener("click", async () => {
+    const res = await fetch("/api/stripe/portal", { method: "POST" });
+    const json = await res.json();
+    if (json.url) window.location.href = json.url;
+    else alert(json.error || "Portal failed");
+  });
+</script>

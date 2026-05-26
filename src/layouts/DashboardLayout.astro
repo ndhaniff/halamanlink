@@ -1,0 +1,138 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Wordmark from "../components/Wordmark.astro";
+import {
+  getProfileByUserId,
+  getUserPlan,
+} from "../lib/db-queries";
+import { getInitials } from "../lib/themes";
+
+interface Props {
+  title?: string;
+  active?: "links" | "appearance" | "analytics" | "billing" | "settings";
+  showPreview?: boolean;
+}
+
+const { title = "Dashboard", active = "links", showPreview = true } = Astro.props;
+const user = Astro.locals.user!;
+const profile = await getProfileByUserId(user.id);
+const plan = await getUserPlan(user.id);
+const appDomain = import.meta.env.APP_DOMAIN || "localhost";
+const appUrl = import.meta.env.APP_URL || "http://localhost:4321";
+const previewUrl = profile ? `/p/${profile.slug}` : "/";
+const publicUrl =
+  appDomain === "localhost"
+    ? `${appUrl}/p/${profile?.slug ?? ""}`
+    : `https://${profile?.slug ?? ""}.${appDomain}`;
+
+const nav = [
+  { href: "/dashboard", id: "links", label: "Links" },
+  { href: "/dashboard/appearance", id: "appearance", label: "Appearance" },
+  { href: "/dashboard/analytics", id: "analytics", label: "Analytics" },
+  { href: "/dashboard/billing", id: "billing", label: "Billing" },
+  { href: "/dashboard/settings", id: "settings", label: "Settings" },
+];
+---
+
+<BaseLayout title={`${title} · Halamanlink`}>
+  <div class:list={["hl-dash-shell", { "has-preview": showPreview && profile }]}>
+    <aside class="hl-dash-sidebar">
+      <div class="px-2 pb-4 pt-1">
+        <Wordmark size={13} />
+      </div>
+
+      {profile && (
+        <div
+          class="flex w-full items-center gap-2.5 rounded-[var(--hl-radius)] border border-[var(--hl-line)] bg-[var(--hl-bg-2)] p-3 text-left"
+        >
+          <span
+            class="hl-display grid h-7 w-7 shrink-0 place-items-center rounded-lg text-sm"
+            style="background: var(--hl-clay); color: var(--hl-bg);"
+          >
+            {getInitials(profile.displayName)}
+          </span>
+          <span class="min-w-0 flex-1 text-[13px]">
+            <div class="font-medium">{profile.displayName}</div>
+            <div class="hl-mono truncate text-[11px]" style="color: var(--hl-ink-3);">
+              {profile.slug}.{appDomain === "localhost" ? "localhost" : appDomain}
+            </div>
+          </span>
+        </div>
+      )}
+
+      <nav class="mt-3 flex flex-col gap-0.5">
+        {
+          nav.map((item) => (
+            <a
+              href={item.href}
+              class:list={["hl-nav-item", { "is-active": active === item.id }]}
+            >
+              {item.label}
+              {item.id === "billing" && plan === "free" && (
+                <span
+                  class="ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+                  style="background: var(--hl-clay-soft); color: var(--hl-clay-deep);"
+                >
+                  Free
+                </span>
+              )}
+            </a>
+          ))
+        }
+      </nav>
+
+      <div class="flex-1"></div>
+
+      {plan === "free" && (
+        <div
+          class="hl-grain rounded-[var(--hl-radius)] border p-3.5"
+          style="background: var(--hl-sage-soft); border-color: oklch(0.67 0.068 145 / 0.25);"
+        >
+          <div class="hl-eyebrow" style="color: var(--hl-sage-deep);">Upgrade</div>
+          <div class="hl-display mt-1 text-lg leading-tight">Unlock unlimited links.</div>
+          <p class="mb-2.5 mt-1.5 text-[11.5px] leading-snug" style="color: var(--hl-ink-2);">
+            Pro adds all themes, custom domain and full analytics history.
+          </p>
+          <a href="/dashboard/billing" class="hl-btn hl-btn-sage w-full justify-center px-3 py-2 text-xs">
+            See Pro
+          </a>
+        </div>
+      )}
+
+      <form method="POST" action="/api/auth/logout" class="mt-2">
+        <button
+          type="submit"
+          class="flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-[12.5px]"
+          style="color: var(--hl-ink-3); background: transparent; border: 0; cursor: pointer;"
+        >
+          Sign out
+        </button>
+      </form>
+    </aside>
+
+    <main class="min-w-0 overflow-hidden">
+      <slot />
+    </main>
+
+    {
+      showPreview && profile && (
+        <aside class="hl-dash-preview">
+          <div class="flex items-center justify-between">
+            <div class="hl-eyebrow">Live preview</div>
+            <a href={previewUrl} target="_blank" class="hl-btn hl-btn-soft px-2.5 py-1.5 text-[11.5px]">
+              Open
+            </a>
+          </div>
+          <div class="hl-phone-frame">
+            <div class="hl-phone-screen">
+              <iframe src={previewUrl} title="Live preview" class="h-full w-full border-0"></iframe>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-[11.5px]" style="color: var(--hl-ink-3);">
+            <span class="hl-mono truncate">{publicUrl.replace("https://", "").replace("http://", "")}</span>
+          </div>
+        </aside>
+      )
+    }
+  </div>
+</BaseLayout>
