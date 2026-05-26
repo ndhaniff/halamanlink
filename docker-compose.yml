@@ -1,10 +1,12 @@
-# Coolify: create a Docker Compose resource pointing at this file.
-# Set env vars in the Coolify UI (no .env file required on the server).
+# Coolify: New Resource → Docker Compose → this repo
 #
-# Domains in Coolify UI: https://app.links.halaman.cc  (do NOT add *.links here)
-# Slug subdomains ({slug}.links.halaman.cc) are routed via Traefik labels below.
+# Coolify UI checklist (required for slug subdomains):
+#   1. Domains: https://app.links.halaman.cc  ONLY (never https://*.links.halaman.cc)
+#   2. Advanced → Connect To Predefined Network → coolify
+#   3. Advanced → disable "Readonly Labels" if custom Traefik labels vanish after deploy
+#   4. Env: APP_DOMAIN=links.halaman.cc, APP_URL=https://app.links.halaman.cc
 #
-# Local: cp .env.example .env then `docker compose up -d --build`
+# Local: cp .env.example .env && docker compose up -d --build
 
 services:
   halamanlink:
@@ -16,6 +18,8 @@ services:
         APP_URL: ${APP_URL:-http://localhost:4321}
     image: halamanlink:latest
     restart: unless-stopped
+    expose:
+      - "4321"
     ports:
       - "4321:4321"
     environment:
@@ -32,14 +36,18 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
-      # User slug pages: {slug}.APP_DOMAIN — uses APP_DOMAIN from Coolify env
-      - traefik.http.routers.halamanlink-slugs.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*\.${APP_DOMAIN:-links.halaman.cc}$`)
-      - traefik.http.routers.halamanlink-slugs.entrypoints=https
-      - traefik.http.routers.halamanlink-slugs.tls=true
-      - traefik.http.routers.halamanlink-slugs.tls.certresolver=letsencrypt
-      - traefik.http.routers.halamanlink-slugs.tls.domains[0].main=links.halaman.cc
-      - traefik.http.routers.halamanlink-slugs.tls.domains[0].sans=*.links.halaman.cc
-      - traefik.http.routers.halamanlink-slugs.service=halamanlink-slugs
+      # Slug pages: team7a.links.halaman.cc → this container (Traefik 3 HostRegexp)
+      - traefik.http.routers.halamanlink-slugs-https.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]links[.]halaman[.]cc$`)
+      - traefik.http.routers.halamanlink-slugs-https.entrypoints=https
+      - traefik.http.routers.halamanlink-slugs-https.tls=true
+      - traefik.http.routers.halamanlink-slugs-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.halamanlink-slugs-https.service=halamanlink-slugs
+      - traefik.http.routers.halamanlink-slugs-https.priority=100
+      - traefik.http.routers.halamanlink-slugs-http.rule=HostRegexp(`^[a-z0-9][a-z0-9-]*[.]links[.]halaman[.]cc$`)
+      - traefik.http.routers.halamanlink-slugs-http.entrypoints=http
+      - traefik.http.routers.halamanlink-slugs-http.middlewares=redirect-to-https@file
+      - traefik.http.routers.halamanlink-slugs-http.service=halamanlink-slugs
+      - traefik.http.routers.halamanlink-slugs-http.priority=100
       - traefik.http.services.halamanlink-slugs.loadbalancer.server.port=4321
     healthcheck:
       test:

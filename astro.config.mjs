@@ -5,6 +5,18 @@ import node from '@astrojs/node';
 import db from '@astrojs/db';
 import tailwindcss from '@tailwindcss/vite';
 
+const appDomain = process.env.APP_DOMAIN?.trim() || 'localhost';
+
+/** @type {import('astro').Hostname[]} */
+const allowedDomains =
+  appDomain === 'localhost'
+    ? [{ hostname: 'localhost', protocol: 'http' }]
+    : [
+        { hostname: `app.${appDomain}`, protocol: 'https' },
+        { hostname: `**.${appDomain}`, protocol: 'https' },
+        { hostname: appDomain, protocol: 'https' },
+      ];
+
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
@@ -14,6 +26,11 @@ export default defineConfig({
   }),
 
   integrations: [db()],
+
+  // Astro 6 CSRF check — required behind Traefik/Coolify (fixes POST 403 on /api/*)
+  security: {
+    allowedDomains,
+  },
 
   vite: {
     plugins: [tailwindcss()]

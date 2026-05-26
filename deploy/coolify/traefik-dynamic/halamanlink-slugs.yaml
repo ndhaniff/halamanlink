@@ -1,0 +1,35 @@
+# Fallback if docker-compose Traefik labels are not picked up by Coolify.
+#
+# 1. Find the Halamanlink container name on the server:
+#      docker ps --format "{{.Names}}" | grep -i halaman
+# 2. Replace HALAMANLINK_CONTAINER below with that name (e.g. abc123-halamanlink-1)
+# 3. Copy this file to the Coolify proxy dynamic folder:
+#      /data/coolify/proxy/dynamic/halamanlink-slugs.yaml
+# 4. Traefik watches that folder — no proxy restart needed.
+#
+# If redirect-to-https@file errors, remove the http router block.
+
+http:
+  routers:
+    halamanlink-slugs-https:
+      rule: HostRegexp(`^[a-z0-9][a-z0-9-]*[.]links[.]halaman[.]cc$`)
+      entryPoints:
+        - https
+      service: halamanlink-slugs
+      priority: 100
+      tls:
+        certResolver: letsencrypt
+    halamanlink-slugs-http:
+      rule: HostRegexp(`^[a-z0-9][a-z0-9-]*[.]links[.]halaman[.]cc$`)
+      entryPoints:
+        - http
+      middlewares:
+        - redirect-to-https@file
+      service: halamanlink-slugs
+      priority: 100
+  services:
+    halamanlink-slugs:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://HALAMANLINK_CONTAINER:4321
