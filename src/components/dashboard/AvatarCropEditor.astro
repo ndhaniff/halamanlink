@@ -184,9 +184,9 @@
       const isSquareCrop =
         activeImage.naturalWidth === activeImage.naturalHeight &&
         activeImage.naturalWidth <= AVATAR_CROP_OUTPUT;
-      if (isSquareCrop && !options.file) {
-        userScale = 1.25;
-        zoomEl.value = "1.25";
+      if (isSquareCrop && !options.hasSource && !options.file) {
+        userScale = 1.5;
+        zoomEl.value = "1.5";
       }
 
       syncCircle();

@@ -95,28 +95,45 @@ export async function cropAvatarToBlob(
   });
 }
 
-export function loadImageSource(source: string | File): Promise<HTMLImageElement> {
+function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    let objectUrl: string | undefined;
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not load image"));
+    img.src = src;
+  });
+}
 
-    img.onload = () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      resolve(img);
-    };
-
-    img.onerror = () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      reject(new Error("Could not load image"));
-    };
-
-    if (typeof source === "string") {
-      img.crossOrigin = "anonymous";
-      img.src = source;
-      return;
+export async function loadImageSource(source: string | File): Promise<HTMLImageElement> {
+  if (source instanceof File) {
+    const objectUrl = URL.createObjectURL(source);
+    try {
+      return await loadImageElement(objectUrl);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
     }
+  }
 
-    objectUrl = URL.createObjectURL(source);
-    img.src = objectUrl;
+  const resolved = new URL(source, window.location.origin);
+  const isSameOrigin = resolved.origin === window.location.origin;
+
+  if (isSameOrigin) {
+    const response = await fetch(resolved.href, { credentials: "same-origin" });
+    if (!response.ok) throw new Error("Could not load image");
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      return await loadImageElement(objectUrl);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not load image"));
+    img.src = source;
   });
 }

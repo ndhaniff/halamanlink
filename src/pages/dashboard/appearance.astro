@@ -3,7 +3,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import AvatarCropEditor from "../../components/dashboard/AvatarCropEditor.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
 import ProfileAvatar from "../../components/ProfileAvatar.astro";
-import { MAX_AVATAR_BYTES } from "../../lib/uploads";
+import { MAX_AVATAR_BYTES, getAvatarSourceUrl } from "../../lib/uploads";
 import {
   getProfileByUserId,
   getUserPlan,
@@ -21,6 +21,9 @@ const themes = getAvailableThemes(plan);
 const currentTheme = parseTheme(profile.theme);
 const previewUrl = `/p/${profile.slug}`;
 const avatarPreview = profile.avatarUrl || "";
+const avatarSourceUrl = await getAvatarSourceUrl(profile.id);
+const avatarEditUrl = avatarSourceUrl || avatarPreview;
+const avatarHasSource = Boolean(avatarSourceUrl);
 ---
 
 <DashboardLayout title="Appearance" active="appearance" showPreview={false}>
@@ -224,7 +227,7 @@ const avatarPreview = profile.avatarUrl || "";
   <AvatarCropEditor />
 </DashboardLayout>
 
-<script define:vars={{ themes, avatarPreview, maxAvatarBytes: MAX_AVATAR_BYTES }}>
+<script define:vars={{ themes, avatarPreview, avatarEditUrl, avatarHasSource, maxAvatarBytes: MAX_AVATAR_BYTES }}>
   const form = document.getElementById("appearance-form");
   const errorEl = document.getElementById("error");
   const successEl = document.getElementById("success");
@@ -233,6 +236,7 @@ const avatarPreview = profile.avatarUrl || "";
   const avatarPreviewButton = document.getElementById("avatar-preview-button");
   const avatarRemove = document.getElementById("avatar-remove");
   const avatarStatus = document.getElementById("avatar-status");
+  let pendingSourceFile = null;
 
   async function uploadAvatarBlob(blob) {
     errorEl?.classList.add("hidden");
@@ -242,6 +246,9 @@ const avatarPreview = profile.avatarUrl || "";
     try {
       const body = new FormData();
       body.append("avatar", blob, "avatar.jpg");
+      if (pendingSourceFile) {
+        body.append("source", pendingSourceFile);
+      }
 
       const res = await fetch("/api/avatar", { method: "POST", body });
       const json = await res.json().catch(() => ({}));
@@ -267,7 +274,7 @@ const avatarPreview = profile.avatarUrl || "";
     }
   }
 
-  function openAvatarEditor(source) {
+  function runAvatarEditor(options) {
     if (typeof window.openAvatarCropEditor !== "function") {
       if (errorEl) {
         errorEl.textContent = "Photo editor is still loading. Try again.";
@@ -277,20 +284,55 @@ const avatarPreview = profile.avatarUrl || "";
     }
 
     window.openAvatarCropEditor({
-      ...source,
+      ...options,
       onConfirm: uploadAvatarBlob,
       onCancel: () => {
         avatarFile.value = "";
+        pendingSourceFile = null;
       },
       onLoadError: () => {
         if (errorEl) {
           errorEl.textContent =
-            "Could not load this image for editing. Upload the file directly or use an image URL on your own domain.";
+            "Could not load this image for editing. Upload the photo again to enable repositioning.";
           errorEl.classList.remove("hidden");
         }
         avatarFile.value = "";
+        pendingSourceFile = null;
       },
     });
+  }
+
+  async function openAvatarEditor(source) {
+    errorEl?.classList.add("hidden");
+
+    if (source.file) {
+      runAvatarEditor({ file: source.file, hasSource: true });
+      return;
+    }
+
+    let editUrl = avatarEditUrl || avatarPreview;
+    let hasSource = avatarHasSource;
+
+    try {
+      const res = await fetch("/api/avatar");
+      if (res.ok) {
+        const data = await res.json();
+        editUrl = data.editUrl || avatarPreview;
+        hasSource = Boolean(data.hasSource);
+      }
+    } catch {
+      // fall back to server-rendered values
+    }
+
+    if (!editUrl) {
+      if (errorEl) {
+        errorEl.textContent = "Upload a photo first.";
+        errorEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    runAvatarEditor({ url: editUrl, hasSource });
   }
 
   avatarFile?.addEventListener("change", () => {
@@ -308,17 +350,17 @@ const avatarPreview = profile.avatarUrl || "";
       return;
     }
 
+    pendingSourceFile = file;
     openAvatarEditor({ file });
   });
 
-  avatarAdjust?.addEventListener("click", () => {
+  avatarAdjust?.addEventListener("click", async () => {
     if (!avatarPreview) return;
-    errorEl?.classList.add("hidden");
-    openAvatarEditor({ url: avatarPreview });
+    await openAvatarEditor({});
   });
 
-  avatarPreviewButton?.addEventListener("click", () => {
-    avatarAdjust?.click();
+  avatarPreviewButton?.addEventListener("click", async () => {
+    await openAvatarEditor({});
   });
 
   avatarRemove?.addEventListener("click", async () => {

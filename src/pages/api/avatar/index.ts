@@ -3,7 +3,12 @@ import {
   getProfileByUserId,
   updateProfile,
 } from "../../../lib/db-queries";
-import { removeAvatarFiles, saveAvatar } from "../../../lib/uploads";
+import {
+  getAvatarSourceUrl,
+  removeAvatarFiles,
+  saveAvatar,
+  saveAvatarSource,
+} from "../../../lib/uploads";
 
 export const prerender = false;
 
@@ -14,6 +19,20 @@ function json(data: unknown, status = 200) {
   });
 }
 
+export const GET: APIRoute = async ({ locals }) => {
+  if (!locals.user) return json({ error: "Unauthorized" }, 401);
+
+  const profile = await getProfileByUserId(locals.user.id);
+  if (!profile) return json({ error: "Profile not found" }, 404);
+
+  const sourceUrl = await getAvatarSourceUrl(profile.id);
+  return json({
+    avatarUrl: profile.avatarUrl,
+    editUrl: sourceUrl ?? profile.avatarUrl,
+    hasSource: Boolean(sourceUrl),
+  });
+};
+
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return json({ error: "Unauthorized" }, 401);
 
@@ -23,9 +42,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const form = await request.formData();
     const file = form.get("avatar");
+    const source = form.get("source");
 
     if (!(file instanceof File) || file.size === 0) {
       return json({ error: "No image file provided" }, 400);
+    }
+
+    if (source instanceof File && source.size > 0) {
+      const savedSource = await saveAvatarSource(profile.id, source);
+      if ("error" in savedSource) return json({ error: savedSource.error }, 400);
     }
 
     const saved = await saveAvatar(profile.id, file);
