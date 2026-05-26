@@ -3,8 +3,30 @@
 ## Prerequisites
 
 - Coolify server with Docker
-- Domain name (e.g. `halamanlink.com`)
+- Domain name (e.g. `halaman.cc`)
 - Stripe account (for billing)
+
+## Docker Compose
+
+Copy env and set your domain:
+
+```bash
+cp .env.example .env
+# edit .env — for halaman.cc:
+#   APP_DOMAIN=halaman.cc
+#   APP_URL=https://app.halaman.cc
+#   SESSION_SECRET=<long-random-string>
+
+docker compose up -d --build
+```
+
+Behind a reverse proxy on the same host (localhost bind only):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+**Coolify:** create a **Docker Compose** resource, point it at this repo, set the same env vars in the UI, and mount volume `halamanlink-data` → `/app/data`. Rebuild after changing `APP_DOMAIN` or `APP_URL` (they are baked in at build time).
 
 ## DNS
 
@@ -20,12 +42,14 @@ Point these records to your Coolify proxy:
 Set in Coolify:
 
 ```
-APP_DOMAIN=halamanlink.com
-APP_URL=https://app.halamanlink.com
+APP_DOMAIN=halaman.cc
+APP_URL=https://app.halaman.cc
 SESSION_SECRET=<long-random-string>
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRICE_PRO_MONTHLY=price_...
+ASTRO_DATABASE_FILE=/app/data/content.db
+UPLOAD_DIR=/app/data/uploads
 ```
 
 ## Persistent SQLite

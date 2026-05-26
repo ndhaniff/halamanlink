@@ -1,19 +1,56 @@
+# Production deployment (Coolify, VPS, or local Docker).
+#
+# 1. cp .env.example .env
+# 2. Set APP_DOMAIN, APP_URL, SESSION_SECRET (and Stripe keys when ready)
+# 3. docker compose up -d --build
+#
+# Example for halaman.cc:
+#   APP_DOMAIN=halaman.cc
+#   APP_URL=https://app.halaman.cc
+#
+# Point DNS: app.halaman.cc and *.halaman.cc → your server.
+# Put a reverse proxy (Coolify/Traefik/Caddy) in front for HTTPS + wildcard SSL.
+
 services:
   halamanlink:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_DOMAIN: ${APP_DOMAIN:-localhost}
+        APP_URL: ${APP_URL:-http://localhost:4321}
+        ASTRO_DATABASE_FILE: /app/data/content.db
+    image: halamanlink:latest
+    container_name: halamanlink
+    restart: unless-stopped
     ports:
-      - "4321:4321"
+      - "${APP_PORT:-4321}:4321"
+    env_file:
+      - path: .env
+        required: false
     environment:
       APP_DOMAIN: ${APP_DOMAIN:-localhost}
       APP_URL: ${APP_URL:-http://localhost:4321}
-      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-to-a-long-random-string}
       ASTRO_DATABASE_FILE: /app/data/content.db
+      UPLOAD_DIR: /app/data/uploads
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_PRO_MONTHLY: ${STRIPE_PRICE_PRO_MONTHLY:-}
     volumes:
       - halamanlink-data:/app/data
-    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4321/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
 volumes:
   halamanlink-data:

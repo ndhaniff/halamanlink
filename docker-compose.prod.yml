@@ -1,0 +1,11 @@
+# Production overrides — bind on localhost only when a reverse proxy sits in front.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Coolify: deploy docker-compose.yml directly and set env vars in the UI instead.
+
+services:
+  halamanlink:
+    restart: always
+    ports:
+      - "127.0.0.1:${APP_PORT:-4321}:4321"
