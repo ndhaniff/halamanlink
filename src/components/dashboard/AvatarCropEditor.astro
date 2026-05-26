@@ -94,6 +94,7 @@
   }
 
   let activeImage = null;
+  let cleanupPreviewUrl = null;
   let circleX = 0;
   let circleY = 0;
   let userScale = 1;
@@ -151,7 +152,10 @@
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     modal.setAttribute("aria-hidden", "true");
+    cleanupPreviewUrl?.();
+    cleanupPreviewUrl = null;
     activeImage = null;
+    imageEl.removeAttribute("src");
     dragging = false;
     hideError();
     onCancel?.();
@@ -178,8 +182,10 @@
       const source = options.file ?? options.url;
       if (!source) throw new Error("No image provided");
 
-      activeImage = await loadImageSource(source);
-      imageEl.src = activeImage.src;
+      const loaded = await loadImageSource(source);
+      activeImage = loaded.image;
+      cleanupPreviewUrl = loaded.cleanup;
+      imageEl.src = loaded.previewUrl;
 
       const isSquareCrop =
         activeImage.naturalWidth === activeImage.naturalHeight &&

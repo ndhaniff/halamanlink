@@ -2,6 +2,12 @@ export const AVATAR_CROP_STAGE = 280;
 export const AVATAR_CROP_CIRCLE = 260;
 export const AVATAR_CROP_OUTPUT = 512;
 
+export type LoadedCropImage = {
+  image: HTMLImageElement;
+  previewUrl: string;
+  cleanup: () => void;
+};
+
 export function getCoverScale(
   naturalWidth: number,
   naturalHeight: number,
@@ -104,14 +110,15 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function loadImageSource(source: string | File): Promise<HTMLImageElement> {
+export async function loadImageSource(source: string | File): Promise<LoadedCropImage> {
   if (source instanceof File) {
-    const objectUrl = URL.createObjectURL(source);
-    try {
-      return await loadImageElement(objectUrl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
+    const previewUrl = URL.createObjectURL(source);
+    const image = await loadImageElement(previewUrl);
+    return {
+      image,
+      previewUrl,
+      cleanup: () => URL.revokeObjectURL(previewUrl),
+    };
   }
 
   const resolved = new URL(source, window.location.origin);
@@ -121,19 +128,26 @@ export async function loadImageSource(source: string | File): Promise<HTMLImageE
     const response = await fetch(resolved.href, { credentials: "same-origin" });
     if (!response.ok) throw new Error("Could not load image");
     const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    try {
-      return await loadImageElement(objectUrl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
+    const previewUrl = URL.createObjectURL(blob);
+    const image = await loadImageElement(previewUrl);
+    return {
+      image,
+      previewUrl,
+      cleanup: () => URL.revokeObjectURL(previewUrl),
+    };
   }
 
-  return new Promise((resolve, reject) => {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Could not load image"));
     img.src = source;
   });
+
+  return {
+    image,
+    previewUrl: source,
+    cleanup: () => undefined,
+  };
 }
