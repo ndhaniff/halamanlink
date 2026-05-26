@@ -35,6 +35,24 @@ async function linksHasOpenInNewTab() {
   }
 }
 
+async function profilesHasLocationLat() {
+  const client = createClient({ url: `file:${dbFile}` });
+  try {
+    const result = await client.execute("PRAGMA table_info(Profiles)");
+    return result.rows.some((row) => row.name === "locationLat");
+  } catch {
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+async function schemaNeedsPush() {
+  if (!(await linksHasOpenInNewTab())) return true;
+  if (!(await profilesHasLocationLat())) return true;
+  return false;
+}
+
 function copyTemplate() {
   if (!existsSync(template)) {
     throw new Error(`Database template missing at ${template}`);
@@ -53,7 +71,7 @@ function pushSchema() {
 
 async function main() {
   if (await hasUsersTable()) {
-    if (!(await linksHasOpenInNewTab())) {
+    if (await schemaNeedsPush()) {
       console.log("Applying database schema updates...");
       pushSchema();
     } else {

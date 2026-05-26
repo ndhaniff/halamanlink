@@ -3,6 +3,8 @@ import type { ThemePreset } from "../../lib/themes";
 import { getInitials, isDarkTheme } from "../../lib/themes";
 import type { LinkRecord } from "../../lib/db-queries";
 import LinkIcon from "../LinkIcon.astro";
+import ProfileLocation from "./ProfileLocation.astro";
+import { hasProfileLocation } from "../../lib/location";
 
 interface Props {
   profile: {
@@ -10,6 +12,9 @@ interface Props {
     slug: string;
     bio: string;
     avatarUrl: string;
+    locationLat?: number | null;
+    locationLng?: number | null;
+    locationLabel?: string | null;
   };
   theme: ThemePreset;
   links: LinkRecord[];
@@ -113,6 +118,17 @@ const editorialName = theme.id === "cream" || theme.id === "clay";
         >
           {profile.bio}
         </p>
+      )
+    }
+
+    {
+      hasProfileLocation(profile) && (
+        <ProfileLocation
+          lat={profile.locationLat!}
+          lng={profile.locationLng!}
+          label={profile.locationLabel ?? undefined}
+          theme={theme}
+        />
       )
     }
 

@@ -9,6 +9,7 @@ import { isValidSlug, slugify } from "../../../lib/slug";
 import { parseTheme } from "../../../lib/themes";
 import { canUseTheme } from "../../../lib/plans";
 import { getUserPlan } from "../../../lib/db-queries";
+import { parseCoordinate, validateCoordinates } from "../../../lib/location";
 
 export const prerender = false;
 
@@ -65,6 +66,34 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return json({ error: "Theme not available on your plan" }, 403);
     }
     updates.theme = theme;
+  }
+
+  if (
+    body.locationLat !== undefined ||
+    body.locationLng !== undefined ||
+    body.locationLabel !== undefined
+  ) {
+    const lat =
+      body.locationLat !== undefined ? parseCoordinate(body.locationLat) : profile.locationLat ?? null;
+    const lng =
+      body.locationLng !== undefined ? parseCoordinate(body.locationLng) : profile.locationLng ?? null;
+
+    if (lat === null && lng === null) {
+      updates.locationLat = null;
+      updates.locationLng = null;
+    } else {
+      if (lat === null || lng === null) {
+        return json({ error: "Provide both latitude and longitude, or leave both empty." }, 400);
+      }
+      const check = validateCoordinates(lat, lng);
+      if (!check.ok) return json({ error: check.error }, 400);
+      updates.locationLat = lat;
+      updates.locationLng = lng;
+    }
+
+    if (body.locationLabel !== undefined) {
+      updates.locationLabel = String(body.locationLabel).trim();
+    }
   }
 
   await updateProfile(profile.id, updates);

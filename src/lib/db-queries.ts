@@ -126,9 +126,17 @@ export async function getProfileByVerifiedDomain(domain: string) {
 export async function updateProfile(
   profileId: string,
   data: Partial<
-    Pick<
+      Pick<
       ProfileRecord,
-      "slug" | "displayName" | "bio" | "avatarUrl" | "theme" | "isPublished"
+      | "slug"
+      | "displayName"
+      | "bio"
+      | "avatarUrl"
+      | "theme"
+      | "isPublished"
+      | "locationLat"
+      | "locationLng"
+      | "locationLabel"
     >
   >,
 ) {

@@ -137,6 +137,7 @@ If `halaman.cc` is already used for another site, use a subdomain as `APP_DOMAIN
 | `APP_URL` | yes | App URL for auth/dashboard, e.g. `https://app.links.halaman.cc` |
 | `SESSION_SECRET` | yes | Long random string |
 | `STRIPE_*` | optional | Billing |
+| `GOOGLE_MAPS_API_KEY` | optional | Google Maps Embed API for pinned location on profiles |
 | `ASTRO_DATABASE_FILE` | set in compose | `/app/data/content.db` |
 | `UPLOAD_DIR` | set in compose | `/app/data/uploads` |
 

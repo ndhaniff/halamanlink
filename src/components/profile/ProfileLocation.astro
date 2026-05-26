@@ -1,0 +1,78 @@
+---
+import type { ThemePreset } from "../../lib/themes";
+import {
+  formatCoordinates,
+  getGoogleMapsApiKey,
+  getGoogleMapsEmbedUrl,
+  getGoogleMapsUrl,
+} from "../../lib/location";
+
+interface Props {
+  lat: number;
+  lng: number;
+  label?: string;
+  theme: ThemePreset;
+}
+
+const { lat, lng, label, theme } = Astro.props;
+const mapsUrl = getGoogleMapsUrl(lat, lng, label);
+const apiKey = getGoogleMapsApiKey();
+const embedUrl = apiKey ? getGoogleMapsEmbedUrl(lat, lng, apiKey, label) : null;
+---
+
+<section class="mb-7">
+  {
+    embedUrl ? (
+      <div
+        class="overflow-hidden"
+        style={{
+          borderRadius: `${theme.radius}px`,
+          border: `1px solid ${theme.btnBorder}`,
+          boxShadow: "0 1px 2px rgba(0,0,0,.04)",
+        }}
+      >
+        <iframe
+          title={label ? `Map: ${label}` : "Location map"}
+          src={embedUrl}
+          class="block h-[220px] w-full border-0"
+          loading="lazy"
+          allowfullscreen
+          referrerpolicy="no-referrer-when-downgrade"
+        />
+      </div>
+    ) : (
+      <div
+        class="px-4 py-5 text-center text-[12.5px]"
+        style={{
+          borderRadius: `${theme.radius}px`,
+          border: `1px solid ${theme.btnBorder}`,
+          color: theme.muted,
+          background: theme.btnBg,
+        }}
+      >
+        Map preview unavailable — open in Google Maps below.
+      </div>
+    )
+  }
+  {
+    label && (
+      <p class="mt-2.5 text-center text-[13.5px] font-medium" style={{ color: theme.ink }}>
+        {label}
+      </p>
+    )
+  }
+  <p class="mt-1 text-center text-[11px]" style={{ color: theme.muted }}>
+    {formatCoordinates(lat, lng)}
+  </p>
+  <p class="mt-2 text-center">
+    <a
+      href={mapsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-[12.5px] underline underline-offset-2"
+      style={{ color: theme.muted }}
+    >
+      Open in Google Maps
+    </a>
+  </p>
+</section>

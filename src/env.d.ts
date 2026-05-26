@@ -19,6 +19,7 @@ interface ImportMetaEnv {
   readonly STRIPE_SECRET_KEY?: string;
   readonly STRIPE_WEBHOOK_SECRET?: string;
   readonly STRIPE_PRICE_PRO_MONTHLY?: string;
+  readonly GOOGLE_MAPS_API_KEY?: string;
 }
 
 interface ImportMeta {
