@@ -3,17 +3,17 @@ WORKDIR /app
 
 ARG APP_DOMAIN=localhost
 ARG APP_URL=http://localhost:4321
-ARG ASTRO_DATABASE_FILE=/app/data/content.db
 
 ENV APP_DOMAIN=$APP_DOMAIN
 ENV APP_URL=$APP_URL
-ENV ASTRO_DATABASE_FILE=$ASTRO_DATABASE_FILE
+# Build-time DB only — runtime uses the mounted volume at /app/data/content.db
+ENV ASTRO_DATABASE_FILE=/tmp/astro-build.db
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+RUN mkdir -p /tmp && npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
