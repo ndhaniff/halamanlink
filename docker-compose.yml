@@ -1,15 +1,8 @@
-# Production deployment (Coolify, VPS, or local Docker).
+# Coolify: create a Docker Compose resource pointing at this file.
+# Set env vars in the Coolify UI (no .env file required on the server).
 #
-# 1. cp .env.example .env
-# 2. Set APP_DOMAIN, APP_URL, SESSION_SECRET (and Stripe keys when ready)
-# 3. docker compose up -d --build
-#
-# Example for halaman.cc:
-#   APP_DOMAIN=halaman.cc
-#   APP_URL=https://app.halaman.cc
-#
-# Point DNS: app.halaman.cc and *.halaman.cc → your server.
-# Put a reverse proxy (Coolify/Traefik/Caddy) in front for HTTPS + wildcard SSL.
+# Local: cp .env.example .env then `docker compose up -d --build`
+# Compose reads .env automatically for ${VAR} substitution.
 
 services:
   halamanlink:
@@ -21,13 +14,9 @@ services:
         APP_URL: ${APP_URL:-http://localhost:4321}
         ASTRO_DATABASE_FILE: /app/data/content.db
     image: halamanlink:latest
-    container_name: halamanlink
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-4321}:4321"
-    env_file:
-      - path: .env
-        required: false
+      - "4321:4321"
     environment:
       APP_DOMAIN: ${APP_DOMAIN:-localhost}
       APP_URL: ${APP_URL:-http://localhost:4321}
