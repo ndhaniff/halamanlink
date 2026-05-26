@@ -17,7 +17,7 @@ interface Props {
 const { lat, lng, label, theme } = Astro.props;
 const mapsUrl = getGoogleMapsUrl(lat, lng, label);
 const apiKey = getGoogleMapsApiKey();
-const embedUrl = apiKey ? getGoogleMapsEmbedUrl(lat, lng, apiKey, label) : null;
+const embedUrl = apiKey ? getGoogleMapsEmbedUrl(lat, lng, apiKey) : null;
 ---
 
 <section class="mb-7">

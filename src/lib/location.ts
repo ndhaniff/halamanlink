@@ -48,21 +48,22 @@ export function getGoogleMapsEmbedUrl(
   lat: number,
   lng: number,
   apiKey: string,
-  label?: string,
 ): string {
-  const trimmedLabel = label?.trim();
-  const q = trimmedLabel ? `${trimmedLabel}@${lat},${lng}` : `${lat},${lng}`;
+  // Use raw coordinates for q/center — "Label@lat,lng" breaks geocoding and zooms out to world view.
+  const coords = `${lat},${lng}`;
   const params = new URLSearchParams({
     key: apiKey,
-    q,
-    zoom: "15",
+    q: coords,
+    center: coords,
+    zoom: "16",
   });
   return `https://www.google.com/maps/embed/v1/place?${params.toString()}`;
 }
 
 export function getGoogleMapsUrl(lat: number, lng: number, label?: string): string {
   const trimmedLabel = label?.trim();
-  const query = trimmedLabel ? `${trimmedLabel}@${lat},${lng}` : `${lat},${lng}`;
+  const coords = `${lat},${lng}`;
+  const query = trimmedLabel ? `${trimmedLabel}, ${coords}` : coords;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
