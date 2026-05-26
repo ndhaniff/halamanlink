@@ -1,0 +1,46 @@
+---
+import type { LinkRecord } from "../../lib/db-queries";
+import type { ThemePreset } from "../../lib/themes";
+import { isDarkTheme } from "../../lib/themes";
+import { getLinkIconLabel } from "../../lib/link-icons";
+import LinkIcon from "../LinkIcon.astro";
+
+interface Props {
+  links: LinkRecord[];
+  theme: ThemePreset;
+  class?: string;
+}
+
+const { links, theme, class: className } = Astro.props;
+const dark = isDarkTheme(theme);
+---
+
+{
+  links.length > 0 && (
+    <div class:list={["mb-7 flex flex-wrap items-center justify-center gap-2.5", className]}>
+      {
+        links.map((link) => (
+          <a
+            href={`/r/${link.id}`}
+            target={link.openInNewTab !== false ? "_blank" : undefined}
+            rel={link.openInNewTab !== false ? "noopener noreferrer" : undefined}
+            aria-label={link.title || getLinkIconLabel(link.icon)}
+            title={link.title || getLinkIconLabel(link.icon)}
+            class="grid h-11 w-11 place-items-center transition hover:scale-105"
+            style={{
+              background: theme.btnBg,
+              border: `1px solid ${theme.btnBorder}`,
+              borderRadius: `${theme.radius * 0.65}px`,
+              color: theme.accent,
+              boxShadow: dark
+                ? "none"
+                : "0 1px 0 rgba(255,255,255,.4) inset, 0 1px 2px rgba(0,0,0,.04)",
+            }}
+          >
+            <LinkIcon icon={link.icon} size={20} />
+          </a>
+        ))
+      }
+    </div>
+  )
+}

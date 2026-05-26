@@ -2,6 +2,7 @@ export type PlanId = "free" | "pro";
 
 export type PlanLimits = {
   maxLinks: number;
+  maxSocialLinks: number;
   themeIds: string[] | "all";
   analyticsDays: number;
   customDomains: number;
@@ -10,12 +11,14 @@ export type PlanLimits = {
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
     maxLinks: 7,
+    maxSocialLinks: 8,
     themeIds: ["cream", "sage", "dusk", "clay", "noir"],
     analyticsDays: 7,
     customDomains: 0,
   },
   pro: {
     maxLinks: Infinity,
+    maxSocialLinks: Infinity,
     themeIds: "all",
     analyticsDays: 30,
     customDomains: 1,
@@ -34,6 +37,10 @@ export function canUseTheme(plan: PlanId, themeId: string): boolean {
 
 export function canAddLink(plan: PlanId, currentCount: number): boolean {
   return currentCount < getPlanLimits(plan).maxLinks;
+}
+
+export function canAddSocialLink(plan: PlanId, currentCount: number): boolean {
+  return currentCount < getPlanLimits(plan).maxSocialLinks;
 }
 
 export function canAddCustomDomain(plan: PlanId, currentCount: number): boolean {

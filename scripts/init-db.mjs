@@ -71,6 +71,13 @@ async function applyMigrations() {
         "ALTER TABLE Profiles ADD COLUMN locationLabel TEXT NOT NULL DEFAULT ''",
       );
     }
+
+    if (!(await columnExists("Links", "kind"))) {
+      console.log("Migration: Links.kind");
+      await client.execute(
+        "ALTER TABLE Links ADD COLUMN kind TEXT NOT NULL DEFAULT 'link'",
+      );
+    }
   } finally {
     client.close();
   }

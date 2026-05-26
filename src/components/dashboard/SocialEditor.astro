@@ -13,63 +13,69 @@ interface Props {
     sortOrder: number;
   }>;
   plan: "free" | "pro";
-  maxLinks: number;
+  maxSocialLinks: number;
 }
 
-const { initialLinks, plan, maxLinks } = Astro.props;
+const { initialLinks, plan, maxSocialLinks } = Astro.props;
 const urlIconRules = getUrlIconRulesForClient();
 ---
 
-<div class="overflow-auto p-7" style="height: calc(100vh - 86px);">
-  <form id="add-link-form" class="mb-5 flex flex-wrap items-end gap-2">
-    <div class="min-w-[140px] flex-1">
-      <label class="hl-label" for="new-title">Title</label>
-      <input id="new-title" placeholder="Link title" required class="hl-input mt-1" />
-    </div>
+<div class="border-t px-7 pb-7 pt-6" style="border-color: var(--hl-line);">
+  <div class="mb-4">
+    <div class="hl-eyebrow">Social icons</div>
+    <p class="mt-1 text-[13px]" style="color: var(--hl-ink-2);">
+      Icon-only links shown in a row below your bio on your public page.
+    </p>
+  </div>
+
+  <form id="add-social-form" class="mb-5 flex flex-wrap items-end gap-2">
     <div class="min-w-[200px] flex-[2]">
-      <label class="hl-label" for="new-url">URL</label>
-      <input id="new-url" placeholder="https://example.com" required class="hl-input mt-1" />
+      <label class="hl-label" for="new-social-url">URL</label>
+      <input id="new-social-url" placeholder="https://instagram.com/you" required class="hl-input mt-1" />
     </div>
     <div>
       <label class="hl-label">Icon</label>
       <div class="mt-1">
-        <IconPicker id="new-icon" value="link" />
+        <IconPicker id="new-social-icon" value="instagram" socialOnly />
       </div>
     </div>
-    <button type="submit" class="hl-btn hl-btn-primary px-4 py-2.5 text-[13px]">New link</button>
+    <button type="submit" class="hl-btn hl-btn-primary px-4 py-2.5 text-[13px]">Add icon</button>
     <label class="flex items-center gap-1.5 self-end pb-2.5 text-xs" style="color: var(--hl-ink-2);">
-      <input id="new-open-tab" type="checkbox" checked />
+      <input id="new-social-open-tab" type="checkbox" checked />
       New tab
     </label>
   </form>
 
-  <p id="link-error" class="mb-4 hidden text-sm" style="color: #b91c1c;"></p>
+  <p id="social-error" class="mb-4 hidden text-sm" style="color: #b91c1c;"></p>
 
-  <div id="links-list" class="flex flex-col gap-2.5">
+  <div id="social-list" class="flex flex-col gap-2.5">
     {
       initialLinks.map((link) => (
         <div
-          class="link-item hl-card flex items-center gap-3.5 p-3.5"
+          class="social-item hl-card flex items-center gap-3.5 p-3.5"
           data-id={link.id}
           draggable="true"
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
           <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
-          <IconPicker id={`icon-${link.id}`} value={link.icon} inputClass="link-icon" />
+          <IconPicker id={`social-icon-${link.id}`} value={link.icon} inputClass="social-icon" socialOnly />
           <div class="min-w-0 flex-1">
-            <input class="link-title hl-input mb-1 py-1.5 text-sm font-medium" value={link.title} />
-            <input class="link-url hl-input py-1.5 text-[11.5px]" value={link.url} style="font-family: var(--hl-font-mono); color: var(--hl-ink-3);" />
+            <input
+              class="social-url hl-input py-1.5 text-[11.5px]"
+              value={link.url}
+              style="font-family: var(--hl-font-mono); color: var(--hl-ink-3);"
+            />
           </div>
           <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
-            <input type="checkbox" class="link-active" checked={link.isActive} />
+            <input type="checkbox" class="social-active" checked={link.isActive} />
             Active
           </label>
           <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
-            <input type="checkbox" class="link-new-tab" checked={link.openInNewTab ?? true} />
+            <input type="checkbox" class="social-new-tab" checked={link.openInNewTab ?? true} />
             New tab
           </label>
-          <button type="button" class="save-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
-          <button type="button" class="delete-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
+          <button type="button" class="save-social hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
+          <button type="button" class="delete-social hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
         </div>
       ))
     }
@@ -77,18 +83,20 @@ const urlIconRules = getUrlIconRulesForClient();
 
   {
     initialLinks.length === 0 && (
-      <p class="py-8 text-center text-sm" style="color: var(--hl-ink-3);">No links yet. Add your first link above.</p>
+      <p class="py-6 text-center text-sm" style="color: var(--hl-ink-3);">
+        No social icons yet. Add Instagram, X, GitHub, and more above.
+      </p>
     )
   }
 
   {
-    plan === "free" && initialLinks.length >= maxLinks && (
+    plan === "free" && initialLinks.length >= maxSocialLinks && (
       <div
         class="hl-card mt-4 flex items-center gap-3 p-3.5"
         style="background: var(--hl-clay-soft); border-color: oklch(0.73 0.082 50 / 0.25);"
       >
         <div class="flex-1 text-[12.5px]">
-          You're using <b>{initialLinks.length} of {maxLinks}</b> free links. Upgrade for unlimited links.
+          You're using <b>{initialLinks.length} of {maxSocialLinks}</b> free social icons.
         </div>
         <a href="/dashboard/billing" class="hl-btn hl-btn-sage px-3 py-1.5 text-xs">Upgrade</a>
       </div>
@@ -96,10 +104,10 @@ const urlIconRules = getUrlIconRulesForClient();
   }
 </div>
 
-<script define:vars={{ plan, urlIconRules }}>
-  const list = document.getElementById("links-list");
-  const errorEl = document.getElementById("link-error");
-  const addForm = document.getElementById("add-link-form");
+<script define:vars={{ urlIconRules }}>
+  const list = document.getElementById("social-list");
+  const errorEl = document.getElementById("social-error");
+  const addForm = document.getElementById("add-social-form");
 
   function showError(msg) {
     if (!errorEl) return;
@@ -111,9 +119,9 @@ const urlIconRules = getUrlIconRulesForClient();
     errorEl?.classList.add("hidden");
   }
 
-  function suggestIconFromUrl(url, currentIcon = "link") {
+  function suggestIconFromUrl(url, currentIcon = "instagram") {
     const input = url.trim();
-    if (!input || (currentIcon && currentIcon !== "link")) return currentIcon;
+    if (!input) return currentIcon;
 
     let haystack = input;
     try {
@@ -128,50 +136,52 @@ const urlIconRules = getUrlIconRulesForClient();
       if (new RegExp(source, "i").test(haystack)) return iconId;
     }
 
-    return currentIcon || "link";
+    return currentIcon;
   }
 
   function maybeSuggestIconForRow(row) {
-    const urlInput = row.querySelector(".link-url");
+    const urlInput = row.querySelector(".social-url");
     const picker = row.querySelector("[data-icon-picker]");
-    const iconInput = row.querySelector(".link-icon");
+    const iconInput = row.querySelector(".social-icon");
     if (!urlInput || !picker || !iconInput) return;
 
     const suggested = suggestIconFromUrl(urlInput.value, iconInput.value);
     if (suggested !== iconInput.value) {
-      const option = picker.querySelector(`[data-icon-id="${suggested}"]`);
-      option?.click();
+      picker.querySelector(`[data-icon-id="${suggested}"]`)?.click();
     }
   }
 
-  document.getElementById("new-url")?.addEventListener("blur", () => {
-    const url = document.getElementById("new-url")?.value ?? "";
-    const picker = document.querySelector("#add-link-form [data-icon-picker]");
-    const iconInput = document.getElementById("new-icon");
-    const suggested = suggestIconFromUrl(url, iconInput?.value ?? "link");
+  document.getElementById("new-social-url")?.addEventListener("blur", () => {
+    const url = document.getElementById("new-social-url")?.value ?? "";
+    const picker = document.querySelector("#add-social-form [data-icon-picker]");
+    const iconInput = document.getElementById("new-social-icon");
+    const suggested = suggestIconFromUrl(url, iconInput?.value ?? "instagram");
     if (picker && suggested !== iconInput?.value) {
       picker.querySelector(`[data-icon-id="${suggested}"]`)?.click();
     }
   });
 
-  list?.addEventListener("blur", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || !target.classList.contains("link-url")) return;
-    maybeSuggestIconForRow(target.closest(".link-item"));
-  }, true);
+  list?.addEventListener(
+    "blur",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !target.classList.contains("social-url")) return;
+      maybeSuggestIconForRow(target.closest(".social-item"));
+    },
+    true,
+  );
 
-  async function saveLink(item) {
+  async function saveSocial(item) {
     const id = item.dataset.id;
     const res = await fetch("/api/links", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id,
-        title: item.querySelector(".link-title")?.value,
-        url: item.querySelector(".link-url")?.value,
-        icon: item.querySelector(".link-icon")?.value ?? "link",
-        isActive: item.querySelector(".link-active")?.checked,
-        openInNewTab: item.querySelector(".link-new-tab")?.checked ?? true,
+        url: item.querySelector(".social-url")?.value,
+        icon: item.querySelector(".social-icon")?.value ?? "instagram",
+        isActive: item.querySelector(".social-active")?.checked,
+        openInNewTab: item.querySelector(".social-new-tab")?.checked ?? true,
       }),
     });
     const json = await res.json();
@@ -181,12 +191,12 @@ const urlIconRules = getUrlIconRulesForClient();
 
   list?.addEventListener("click", async (e) => {
     const target = e.target;
-    const item = target.closest(".link-item");
+    const item = target.closest(".social-item");
     if (!item) return;
 
-    if (target.classList.contains("save-link")) await saveLink(item);
+    if (target.classList.contains("save-social")) await saveSocial(item);
 
-    if (target.classList.contains("delete-link")) {
+    if (target.classList.contains("delete-social")) {
       const res = await fetch("/api/links", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -209,15 +219,15 @@ const urlIconRules = getUrlIconRulesForClient();
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        title: document.getElementById("new-title")?.value,
-        url: document.getElementById("new-url")?.value,
-        icon: document.getElementById("new-icon")?.value ?? "link",
-        openInNewTab: document.getElementById("new-open-tab")?.checked ?? true,
+        url: document.getElementById("new-social-url")?.value,
+        icon: document.getElementById("new-social-icon")?.value ?? "instagram",
+        openInNewTab: document.getElementById("new-social-open-tab")?.checked ?? true,
+        kind: "social",
       }),
     });
     const json = await res.json();
     if (!res.ok) {
-      showError(json.error || "Failed to add link");
+      showError(json.error || "Failed to add social icon");
       return;
     }
     window.location.reload();
@@ -225,7 +235,7 @@ const urlIconRules = getUrlIconRulesForClient();
 
   let draggedItem = null;
   list?.addEventListener("dragstart", (e) => {
-    draggedItem = e.target.closest(".link-item");
+    draggedItem = e.target.closest(".social-item");
     if (draggedItem) draggedItem.style.opacity = "0.5";
   });
   list?.addEventListener("dragend", async () => {
@@ -242,7 +252,7 @@ const urlIconRules = getUrlIconRulesForClient();
   });
 
   function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll(".link-item:not([style*='opacity: 0.5'])")];
+    const draggableElements = [...container.querySelectorAll(".social-item:not([style*='opacity: 0.5'])")];
     return draggableElements.reduce(
       (closest, child) => {
         const box = child.getBoundingClientRect();
@@ -255,11 +265,11 @@ const urlIconRules = getUrlIconRulesForClient();
   }
 
   async function persistOrder() {
-    const order = [...list.querySelectorAll(".link-item")].map((el) => el.dataset.id);
+    const order = [...list.querySelectorAll(".social-item")].map((el) => el.dataset.id);
     await fetch("/api/links", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order, kind: "link" }),
+      body: JSON.stringify({ order, kind: "social" }),
     });
   }
 </script>

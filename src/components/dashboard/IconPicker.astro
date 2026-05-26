@@ -1,16 +1,27 @@
 ---
-import { getLinkIconPickerItems, normalizeLinkIcon } from "../../lib/link-icons";
+import {
+  getLinkIconPickerItems,
+  getSocialIconPickerItems,
+  normalizeLinkIcon,
+} from "../../lib/link-icons";
 
 interface Props {
   id: string;
   name?: string;
   value?: string;
   inputClass?: string;
+  socialOnly?: boolean;
 }
 
-const { id, name = "icon", value = "link", inputClass = "link-icon" } = Astro.props;
+const {
+  id,
+  name = "icon",
+  value = "link",
+  inputClass = "link-icon",
+  socialOnly = false,
+} = Astro.props;
 const iconId = normalizeLinkIcon(value);
-const pickerItems = getLinkIconPickerItems();
+const pickerItems = socialOnly ? getSocialIconPickerItems() : getLinkIconPickerItems();
 ---
 
 <div class="icon-picker relative" data-icon-picker>
@@ -35,7 +46,7 @@ const pickerItems = getLinkIconPickerItems();
   <div
     class="icon-picker-panel hl-card absolute left-0 top-[calc(100%+8px)] z-30 hidden w-[min(320px,calc(100vw-2rem))] p-3 shadow-lg"
     role="dialog"
-    aria-label="Choose a link icon"
+    aria-label={socialOnly ? "Choose a social icon" : "Choose a link icon"}
   >
     <div class="mb-2 flex items-center justify-between gap-2">
       <span class="hl-eyebrow">Icon</span>

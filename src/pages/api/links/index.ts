@@ -6,12 +6,13 @@ import {
   getLinkById,
   getLinksByProfileId,
   getProfileByUserId,
+  getUserPlan,
   reorderLinks,
   updateLink,
+  type LinkKind,
 } from "../../../lib/db-queries";
-import { canAddLink } from "../../../lib/plans";
-import { sanitizeLinkIcon, suggestLinkIcon } from "../../../lib/link-icons";
-import { getUserPlan } from "../../../lib/db-queries";
+import { canAddLink, canAddSocialLink } from "../../../lib/plans";
+import { getLinkIconLabel, sanitizeLinkIcon, suggestLinkIcon } from "../../../lib/link-icons";
 
 export const prerender = false;
 
@@ -28,10 +29,25 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export const GET: APIRoute = async ({ locals }) => {
+function parseKind(value: unknown): LinkKind {
+  return value === "social" ? "social" : "link";
+}
+
+function normalizeUrl(raw: string) {
+  let url = raw.trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  new URL(url);
+  return url;
+}
+
+export const GET: APIRoute = async ({ locals, url }) => {
   if (!locals.user) return json({ error: "Unauthorized" }, 401);
   const profile = await getOwnedProfile(locals.user.id);
-  const links = await getLinksByProfileId(profile.id);
+  const kindParam = url.searchParams.get("kind");
+  const kind = kindParam === "social" || kindParam === "link" ? kindParam : undefined;
+  const links = await getLinksByProfileId(profile.id, kind);
   return json({ links });
 };
 
@@ -39,33 +55,37 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return json({ error: "Unauthorized" }, 401);
   const profile = await getOwnedProfile(locals.user.id);
   const plan = await getUserPlan(locals.user.id);
-  const count = await countLinksByProfileId(profile.id);
+  const body = await request.json();
+  const kind = parseKind(body.kind);
 
-  if (!canAddLink(plan, count)) {
+  const count = await countLinksByProfileId(profile.id, kind);
+  if (kind === "social") {
+    if (!canAddSocialLink(plan, count)) {
+      return json({ error: "Social icon limit reached." }, 403);
+    }
+  } else if (!canAddLink(plan, count)) {
     return json({ error: "Link limit reached. Upgrade to Pro for unlimited links." }, 403);
   }
 
-  const body = await request.json();
-  const title = String(body.title ?? "").trim();
   let url = String(body.url ?? "").trim();
   const icon =
     body.icon !== undefined && String(body.icon).trim()
       ? sanitizeLinkIcon(body.icon)
       : suggestLinkIcon(url);
   const openInNewTab = body.openInNewTab !== undefined ? Boolean(body.openInNewTab) : true;
+  const title =
+    String(body.title ?? "").trim() || (kind === "social" ? getLinkIconLabel(icon) : "");
 
-  if (!title || !url) return json({ error: "Title and URL are required" }, 400);
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = `https://${url}`;
-  }
+  if (!url) return json({ error: "URL is required" }, 400);
+  if (kind === "link" && !title) return json({ error: "Title and URL are required" }, 400);
 
   try {
-    new URL(url);
+    url = normalizeUrl(url);
   } catch {
     return json({ error: "Invalid URL" }, 400);
   }
 
-  const links = await getLinksByProfileId(profile.id);
+  const links = await getLinksByProfileId(profile.id, kind);
   const id = await createLink({
     profileId: profile.id,
     title,
@@ -73,6 +93,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     icon,
     sortOrder: links.length,
     openInNewTab,
+    kind,
   });
 
   return json({ id }, 201);
@@ -90,16 +111,19 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   const updates: Record<string, unknown> = {};
   if (body.title !== undefined) updates.title = String(body.title).trim();
   if (body.url !== undefined) {
-    let url = String(body.url).trim();
-    if (!url.startsWith("http://") && !url.startsWith("https://")) url = `https://${url}`;
     try {
-      new URL(url);
-      updates.url = url;
+      updates.url = normalizeUrl(String(body.url));
     } catch {
       return json({ error: "Invalid URL" }, 400);
     }
   }
-  if (body.icon !== undefined) updates.icon = sanitizeLinkIcon(body.icon);
+  if (body.icon !== undefined) {
+    const icon = sanitizeLinkIcon(body.icon);
+    updates.icon = icon;
+    if (link.kind === "social" && body.title === undefined) {
+      updates.title = getLinkIconLabel(icon);
+    }
+  }
   if (body.isActive !== undefined) updates.isActive = Boolean(body.isActive);
   if (body.openInNewTab !== undefined) updates.openInNewTab = Boolean(body.openInNewTab);
 
@@ -124,14 +148,15 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return json({ error: "Unauthorized" }, 401);
   const profile = await getOwnedProfile(locals.user.id);
   const body = await request.json();
+  const kind = parseKind(body.kind);
   const orderedIds = Array.isArray(body.order) ? body.order.map(String) : [];
 
-  const links = await getLinksByProfileId(profile.id);
+  const links = await getLinksByProfileId(profile.id, kind);
   const validIds = new Set(links.map((l) => l.id));
   if (orderedIds.length !== links.length || !orderedIds.every((id) => validIds.has(id))) {
     return json({ error: "Invalid order" }, 400);
   }
 
-  await reorderLinks(profile.id, orderedIds);
+  await reorderLinks(profile.id, orderedIds, kind);
   return json({ ok: true });
 };

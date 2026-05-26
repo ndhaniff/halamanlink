@@ -2,6 +2,7 @@
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import DashHeader from "../../components/dashboard/DashHeader.astro";
 import LinkEditor from "../../components/dashboard/LinkEditor.astro";
+import SocialEditor from "../../components/dashboard/SocialEditor.astro";
 import {
   getLinksByProfileId,
   getProfileByUserId,
@@ -16,7 +17,8 @@ const user = Astro.locals.user!;
 const profile = await getProfileByUserId(user.id);
 if (!profile) return Astro.redirect("/signup");
 
-const links = await getLinksByProfileId(profile.id);
+const links = await getLinksByProfileId(profile.id, "link");
+const socialLinks = await getLinksByProfileId(profile.id, "social");
 const plan = await getUserPlan(user.id);
 const activeCount = links.filter((l) => l.isActive).length;
 ---
@@ -24,7 +26,7 @@ const activeCount = links.filter((l) => l.isActive).length;
 <DashboardLayout title="Links" active="links">
   <DashHeader
     title="Your links"
-    subtitle={`${links.length} links · ${activeCount} active`}
+    subtitle={`${links.length} links · ${activeCount} active · ${socialLinks.length} social icons`}
   >
     <a slot="actions" href="/dashboard/appearance" class="hl-btn hl-btn-soft px-3.5 py-2 text-[13px]">
       Edit profile
@@ -46,4 +48,12 @@ const activeCount = links.filter((l) => l.isActive).length;
   </div>
 
   <LinkEditor initialLinks={links} plan={plan} maxLinks={PLAN_LIMITS.free.maxLinks} />
+
+  <div class="hl-card mx-7 mb-7 overflow-hidden">
+    <SocialEditor
+      initialLinks={socialLinks}
+      plan={plan}
+      maxSocialLinks={PLAN_LIMITS.free.maxSocialLinks}
+    />
+  </div>
 </DashboardLayout>

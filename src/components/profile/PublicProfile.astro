@@ -4,6 +4,7 @@ import { getInitials, isDarkTheme } from "../../lib/themes";
 import type { LinkRecord } from "../../lib/db-queries";
 import LinkIcon from "../LinkIcon.astro";
 import ProfileLocation from "./ProfileLocation.astro";
+import ProfileSocialIcons from "./ProfileSocialIcons.astro";
 import { hasProfileLocation } from "../../lib/location";
 
 interface Props {
@@ -18,9 +19,10 @@ interface Props {
   };
   theme: ThemePreset;
   links: LinkRecord[];
+  socialLinks?: LinkRecord[];
 }
 
-const { profile, theme, links } = Astro.props;
+const { profile, theme, links, socialLinks = [] } = Astro.props;
 const dark = isDarkTheme(theme);
 const initials = getInitials(profile.displayName);
 const nameParts = profile.displayName.trim().split(/\s+/);
@@ -113,13 +115,18 @@ const editorialName = theme.id === "cream" || theme.id === "clay";
     {
       profile.bio && (
         <p
-          class="mx-auto mb-7 mt-4 max-w-[320px] text-center text-[13.5px] leading-relaxed"
-          style={{ color: theme.muted }}
+          class="mx-auto mt-4 max-w-[320px] text-center text-[13.5px] leading-relaxed"
+          style={{
+            color: theme.muted,
+            marginBottom: socialLinks.length ? "16px" : "28px",
+          }}
         >
           {profile.bio}
         </p>
       )
     }
+
+    <ProfileSocialIcons links={socialLinks} theme={theme} class={profile.bio ? undefined : "mt-4"} />
 
     {
       hasProfileLocation(profile) && (

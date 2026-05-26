@@ -196,11 +196,16 @@ export async function upsertSubscription(
   }
 }
 
-export async function getLinksByProfileId(profileId: string) {
+export type LinkKind = "link" | "social";
+
+export async function getLinksByProfileId(profileId: string, kind?: LinkKind) {
+  const conditions = [eq(Links.profileId, profileId)];
+  if (kind) conditions.push(eq(Links.kind, kind));
+
   return db
     .select()
     .from(Links)
-    .where(eq(Links.profileId, profileId))
+    .where(and(...conditions))
     .orderBy(asc(Links.sortOrder), asc(Links.createdAt));
 }
 
@@ -208,7 +213,19 @@ export async function getActiveLinksByProfileId(profileId: string) {
   return db
     .select()
     .from(Links)
-    .where(and(eq(Links.profileId, profileId), eq(Links.isActive, true)))
+    .where(
+      and(eq(Links.profileId, profileId), eq(Links.isActive, true), eq(Links.kind, "link")),
+    )
+    .orderBy(asc(Links.sortOrder), asc(Links.createdAt));
+}
+
+export async function getActiveSocialLinksByProfileId(profileId: string) {
+  return db
+    .select()
+    .from(Links)
+    .where(
+      and(eq(Links.profileId, profileId), eq(Links.isActive, true), eq(Links.kind, "social")),
+    )
     .orderBy(asc(Links.sortOrder), asc(Links.createdAt));
 }
 
@@ -224,6 +241,7 @@ export async function createLink(input: {
   icon?: string;
   sortOrder: number;
   openInNewTab?: boolean;
+  kind?: LinkKind;
 }) {
   const id = crypto.randomUUID();
   const now = new Date();
@@ -236,6 +254,7 @@ export async function createLink(input: {
     sortOrder: input.sortOrder,
     isActive: true,
     openInNewTab: input.openInNewTab ?? true,
+    kind: input.kind ?? "link",
     createdAt: now,
     updatedAt: now,
   });
@@ -244,7 +263,9 @@ export async function createLink(input: {
 
 export async function updateLink(
   linkId: string,
-  data: Partial<Pick<LinkRecord, "title" | "url" | "icon" | "isActive" | "openInNewTab">>,
+  data: Partial<
+    Pick<LinkRecord, "title" | "url" | "icon" | "isActive" | "openInNewTab" | "kind">
+  >,
 ) {
   await db
     .update(Links)
@@ -260,21 +281,24 @@ export async function deleteLink(linkId: string) {
 export async function reorderLinks(
   profileId: string,
   orderedIds: string[],
+  kind: LinkKind = "link",
 ) {
   const now = new Date();
   for (let i = 0; i < orderedIds.length; i++) {
     await db
       .update(Links)
       .set({ sortOrder: i, updatedAt: now })
-      .where(and(eq(Links.id, orderedIds[i]!), eq(Links.profileId, profileId)));
+      .where(
+        and(eq(Links.id, orderedIds[i]!), eq(Links.profileId, profileId), eq(Links.kind, kind)),
+      );
   }
 }
 
-export async function countLinksByProfileId(profileId: string) {
+export async function countLinksByProfileId(profileId: string, kind: LinkKind = "link") {
   const rows = await db
     .select({ value: count() })
     .from(Links)
-    .where(eq(Links.profileId, profileId));
+    .where(and(eq(Links.profileId, profileId), eq(Links.kind, kind)));
   return rows[0]?.value ?? 0;
 }
 

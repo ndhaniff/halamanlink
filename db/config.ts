@@ -47,6 +47,7 @@ const Links = defineTable({
     sortOrder: column.number({ default: 0 }),
     isActive: column.boolean({ default: true }),
     openInNewTab: column.boolean({ default: true }),
+    kind: column.text({ default: "link" }),
     createdAt: column.date(),
     updatedAt: column.date(),
   },

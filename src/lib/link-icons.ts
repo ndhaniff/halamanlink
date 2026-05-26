@@ -297,6 +297,42 @@ export function getLinkIconPickerItems() {
   }));
 }
 
+export function getLinkIconLabel(iconId: string | null | undefined): string {
+  const id = normalizeLinkIcon(iconId);
+  return LINK_ICONS[id].label;
+}
+
+export function getSocialIconPickerItems() {
+  const socialIds = new Set<LinkIconId>([
+    "instagram",
+    "facebook",
+    "x",
+    "linkedin",
+    "youtube",
+    "tiktok",
+    "github",
+    "whatsapp",
+    "telegram",
+    "discord",
+    "threads",
+    "snapchat",
+    "pinterest",
+    "reddit",
+    "spotify",
+    "twitch",
+    "behance",
+    "dribbble",
+    "medium",
+    "substack",
+    "patreon",
+    "mail",
+    "phone",
+    "globe",
+  ]);
+
+  return getLinkIconPickerItems().filter((item) => socialIds.has(item.id as LinkIconId));
+}
+
 export function getUrlIconRulesForClient() {
   return URL_ICON_RULES.map(([pattern, iconId]) => [pattern.source, iconId]);
 }
