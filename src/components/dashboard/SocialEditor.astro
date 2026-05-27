@@ -54,11 +54,10 @@ const urlIconRules = getUrlIconRulesForClient();
         <div
           class="social-item hl-card flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:gap-3.5"
           data-id={link.id}
-          draggable="true"
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
           <div class="flex min-w-0 items-center gap-3">
-            <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
+            <span class="sortable-handle cursor-grab px-1 active:cursor-grabbing" style="color: var(--hl-ink-3); touch-action: none;">⋮⋮</span>
             <IconPicker id={`social-icon-${link.id}`} value={link.icon} inputClass="social-icon" socialOnly />
             <div class="min-w-0 flex-1">
               <input
@@ -109,6 +108,8 @@ const urlIconRules = getUrlIconRulesForClient();
 </div>
 
 <script define:vars={{ urlIconRules }}>
+  import { initSortableList } from "../../lib/sortable-list";
+
   const list = document.getElementById("social-list");
   const errorEl = document.getElementById("social-error");
   const addForm = document.getElementById("add-social-form");
@@ -237,37 +238,6 @@ const urlIconRules = getUrlIconRulesForClient();
     window.location.reload();
   });
 
-  let draggedItem = null;
-  list?.addEventListener("dragstart", (e) => {
-    draggedItem = e.target.closest(".social-item");
-    if (draggedItem) draggedItem.style.opacity = "0.5";
-  });
-  list?.addEventListener("dragend", async () => {
-    if (draggedItem) draggedItem.style.opacity = "";
-    draggedItem = null;
-    await persistOrder();
-  });
-  list?.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    const afterElement = getDragAfterElement(list, e.clientY);
-    if (!draggedItem) return;
-    if (afterElement == null) list.appendChild(draggedItem);
-    else list.insertBefore(draggedItem, afterElement);
-  });
-
-  function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll(".social-item:not([style*='opacity: 0.5'])")];
-    return draggableElements.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset, element: child };
-        return closest;
-      },
-      { offset: Number.NEGATIVE_INFINITY, element: null },
-    ).element;
-  }
-
   async function persistOrder() {
     const order = [...list.querySelectorAll(".social-item")].map((el) => el.dataset.id);
     await fetch("/api/links", {
@@ -276,4 +246,10 @@ const urlIconRules = getUrlIconRulesForClient();
       body: JSON.stringify({ order, kind: "social" }),
     });
   }
+
+  initSortableList(list, {
+    itemSelector: ".social-item",
+    handleSelector: ".sortable-handle",
+    onReorder: persistOrder,
+  });
 </script>

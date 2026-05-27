@@ -51,11 +51,10 @@ const urlIconRules = getUrlIconRulesForClient();
         <div
           class="link-item hl-card flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:gap-3.5"
           data-id={link.id}
-          draggable="true"
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
           <div class="flex min-w-0 items-center gap-3">
-            <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
+            <span class="sortable-handle cursor-grab px-1 active:cursor-grabbing" style="color: var(--hl-ink-3); touch-action: none;">⋮⋮</span>
             <IconPicker id={`icon-${link.id}`} value={link.icon} inputClass="link-icon" />
             <div class="min-w-0 flex-1">
               <input class="link-title hl-input mb-1 py-1.5 text-sm font-medium" value={link.title} />
@@ -101,6 +100,8 @@ const urlIconRules = getUrlIconRulesForClient();
 </div>
 
 <script define:vars={{ plan, urlIconRules }}>
+  import { initSortableList } from "../../lib/sortable-list";
+
   const list = document.getElementById("links-list");
   const errorEl = document.getElementById("link-error");
   const addForm = document.getElementById("add-link-form");
@@ -227,37 +228,6 @@ const urlIconRules = getUrlIconRulesForClient();
     window.location.reload();
   });
 
-  let draggedItem = null;
-  list?.addEventListener("dragstart", (e) => {
-    draggedItem = e.target.closest(".link-item");
-    if (draggedItem) draggedItem.style.opacity = "0.5";
-  });
-  list?.addEventListener("dragend", async () => {
-    if (draggedItem) draggedItem.style.opacity = "";
-    draggedItem = null;
-    await persistOrder();
-  });
-  list?.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    const afterElement = getDragAfterElement(list, e.clientY);
-    if (!draggedItem) return;
-    if (afterElement == null) list.appendChild(draggedItem);
-    else list.insertBefore(draggedItem, afterElement);
-  });
-
-  function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll(".link-item:not([style*='opacity: 0.5'])")];
-    return draggableElements.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset, element: child };
-        return closest;
-      },
-      { offset: Number.NEGATIVE_INFINITY, element: null },
-    ).element;
-  }
-
   async function persistOrder() {
     const order = [...list.querySelectorAll(".link-item")].map((el) => el.dataset.id);
     await fetch("/api/links", {
@@ -266,4 +236,10 @@ const urlIconRules = getUrlIconRulesForClient();
       body: JSON.stringify({ order, kind: "link" }),
     });
   }
+
+  initSortableList(list, {
+    itemSelector: ".link-item",
+    handleSelector: ".sortable-handle",
+    onReorder: persistOrder,
+  });
 </script>
