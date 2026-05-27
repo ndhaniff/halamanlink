@@ -54,6 +54,10 @@ const urlIconRules = getUrlIconRulesForClient();
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
           <div class="flex min-w-0 items-center gap-3">
+            <div class="sortable-nudge" aria-label="Reorder link">
+              <button type="button" class="sortable-nudge-btn sortable-up" aria-label="Move link up">↑</button>
+              <button type="button" class="sortable-nudge-btn sortable-down" aria-label="Move link down">↓</button>
+            </div>
             <span class="sortable-handle" style="color: var(--hl-ink-3);">⋮⋮</span>
             <IconPicker id={`icon-${link.id}`} value={link.icon} inputClass="link-icon" />
             <div class="min-w-0 flex-1">
@@ -100,7 +104,7 @@ const urlIconRules = getUrlIconRulesForClient();
 </div>
 
 <script define:vars={{ plan, urlIconRules }}>
-  import { initSortableList } from "../../lib/sortable-list";
+  import { initSortableList, initTapReorder } from "../../lib/sortable-list";
 
   const list = document.getElementById("links-list");
   const errorEl = document.getElementById("link-error");
@@ -199,6 +203,7 @@ const urlIconRules = getUrlIconRulesForClient();
       });
       if (res.ok) {
         item.remove();
+        tapReorder.refresh();
         await persistOrder();
       } else {
         const json = await res.json();
@@ -240,6 +245,13 @@ const urlIconRules = getUrlIconRulesForClient();
   initSortableList(list, {
     itemSelector: ".link-item",
     handleSelector: ".sortable-handle",
+    onReorder: persistOrder,
+  });
+
+  const tapReorder = initTapReorder(list, {
+    itemSelector: ".link-item",
+    upSelector: ".sortable-up",
+    downSelector: ".sortable-down",
     onReorder: persistOrder,
   });
 </script>

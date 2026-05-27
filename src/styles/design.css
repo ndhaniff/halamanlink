@@ -397,7 +397,7 @@
   -webkit-touch-callout: none;
   min-width: 2rem;
   min-height: 2.75rem;
-  display: inline-grid;
+  display: none;
   place-items: center;
   margin: -0.5rem 0;
   padding: 0 0.25rem;
@@ -405,6 +405,43 @@
 
 .sortable-handle:active {
   cursor: grabbing;
+}
+
+.sortable-nudge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.sortable-nudge-btn {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 1.625rem;
+  padding: 0;
+  border: 1px solid var(--hl-line);
+  border-radius: 8px;
+  background: var(--hl-bg-2);
+  color: var(--hl-ink-2);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sortable-nudge-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (min-width: 901px) {
+  .sortable-handle {
+    display: inline-grid;
+  }
+
+  .sortable-nudge {
+    display: none;
+  }
 }
 
 body.is-sorting,

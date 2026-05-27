@@ -122,3 +122,63 @@ export function initSortableList(
     if (target.closest(handleSelector)) event.preventDefault();
   });
 }
+
+function updateTapReorderButtons(
+  container: HTMLElement,
+  itemSelector: string,
+  upSelector: string,
+  downSelector: string,
+) {
+  const items = [...container.querySelectorAll<HTMLElement>(itemSelector)];
+
+  items.forEach((item, index) => {
+    const up = item.querySelector<HTMLButtonElement>(upSelector);
+    const down = item.querySelector<HTMLButtonElement>(downSelector);
+    if (up) up.disabled = index === 0;
+    if (down) down.disabled = index === items.length - 1;
+  });
+}
+
+export function initTapReorder(
+  container: HTMLElement | null,
+  options: {
+    itemSelector: string;
+    upSelector: string;
+    downSelector: string;
+    onReorder: () => void | Promise<void>;
+  },
+) {
+  if (!container) return { refresh: () => undefined };
+
+  const { itemSelector, upSelector, downSelector, onReorder } = options;
+
+  const refresh = () => updateTapReorderButtons(container, itemSelector, upSelector, downSelector);
+
+  container.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const isUp = target.closest(upSelector);
+    const isDown = target.closest(downSelector);
+    if (!isUp && !isDown) return;
+
+    const item = target.closest(itemSelector);
+    if (!(item instanceof HTMLElement)) return;
+
+    if (isUp) {
+      const previous = item.previousElementSibling;
+      if (!(previous instanceof HTMLElement) || !previous.matches(itemSelector)) return;
+      container.insertBefore(item, previous);
+    } else {
+      const next = item.nextElementSibling;
+      if (!(next instanceof HTMLElement) || !next.matches(itemSelector)) return;
+      container.insertBefore(next, item);
+    }
+
+    refresh();
+    await onReorder();
+  });
+
+  refresh();
+  return { refresh };
+}
