@@ -23,8 +23,21 @@ const appDomain = getAppDomain();
 <DashboardLayout title="Settings" active="settings" showPreview={false}>
   <DashHeader title="Settings" subtitle="Manage your username and custom domain." />
 
-  <div class="max-w-[760px] space-y-5 overflow-auto p-7" style="height: calc(100vh - 86px);">
-    <section class="hl-card p-6">
+  <div class="hl-dash-scroll max-w-[760px] space-y-5 p-4 md:p-7">
+    <div class="flex flex-wrap gap-2 md:hidden">
+      <a href="/dashboard/billing" class="hl-btn hl-btn-soft flex-1 justify-center px-3 py-2 text-[13px]">
+        Billing
+      </a>
+      <form method="POST" action="/api/auth/logout" class="flex-1">
+        <button
+          type="submit"
+          class="hl-btn hl-btn-ghost w-full justify-center px-3 py-2 text-[13px]"
+        >
+          Sign out
+        </button>
+      </form>
+    </div>
+    <section class="hl-card p-4 md:p-6">
       <div class="hl-eyebrow">Slug</div>
       <h3 class="hl-display m-0 text-[22px]">Your public URL</h3>
       <p class="mt-2 text-sm" style="color: var(--hl-ink-2);">
@@ -38,7 +51,7 @@ const appDomain = getAppDomain();
       <p id="slug-success" class="mt-2 hidden text-sm" style="color: var(--hl-sage-deep);">Slug updated!</p>
     </section>
 
-    <section class="hl-card p-6">
+    <section class="hl-card p-4 md:p-6">
       <div class="hl-eyebrow">Domain</div>
       <h3 class="hl-display m-0 text-[22px]">Custom domain</h3>
       {

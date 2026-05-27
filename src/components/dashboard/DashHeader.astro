@@ -8,11 +8,11 @@ const { title, subtitle } = Astro.props;
 ---
 
 <div class="hl-dash-header">
-  <div>
-    <h1 class="hl-display m-0 text-[34px] tracking-tight">{title}</h1>
+  <div class="min-w-0">
+    <h1 class="hl-dash-header-title hl-display m-0 text-[34px] tracking-tight">{title}</h1>
     {subtitle && <p class="m-0 mt-1 text-[13.5px]" style="color: var(--hl-ink-2)">{subtitle}</p>}
   </div>
-  <div class="flex gap-2">
+  <div class="hl-dash-header-actions flex gap-2">
     <slot name="actions" />
   </div>
 </div>

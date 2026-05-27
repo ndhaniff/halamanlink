@@ -33,7 +33,7 @@ const activeCount = links.filter((l) => l.isActive).length;
     </a>
   </DashHeader>
 
-  <div class="hl-card mx-7 mt-7 flex items-center gap-4 p-5">
+  <div class="hl-card mx-4 mt-4 flex items-center gap-4 p-4 md:mx-7 md:mt-7 md:p-5">
     <ProfileAvatar
       avatarUrl={profile.avatarUrl}
       displayName={profile.displayName}
@@ -49,7 +49,7 @@ const activeCount = links.filter((l) => l.isActive).length;
 
   <LinkEditor initialLinks={links} plan={plan} maxLinks={PLAN_LIMITS.free.maxLinks} />
 
-  <div class="hl-card mx-7 mb-7 overflow-hidden">
+  <div class="hl-card mx-4 mb-4 overflow-hidden md:mx-7 md:mb-7">
     <SocialEditor
       initialLinks={socialLinks}
       plan={plan}

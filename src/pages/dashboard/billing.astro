@@ -24,7 +24,7 @@ const canceled = Astro.url.searchParams.get("canceled");
 <DashboardLayout title="Billing" active="billing" showPreview={false}>
   <DashHeader title="Billing" subtitle={`Currently on the ${plan} plan.`} />
 
-  <div class="max-w-[980px] overflow-auto p-7" style="height: calc(100vh - 86px);">
+  <div class="hl-dash-scroll hl-dash-scroll--desktop-height max-w-[980px] p-4 md:p-7" style="height: calc(100vh - 86px);">
     {
       success && (
         <div class="hl-card mb-4 p-4 text-sm" style="background: var(--hl-sage-soft); color: var(--hl-sage-deep);">

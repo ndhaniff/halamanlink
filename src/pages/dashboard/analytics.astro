@@ -27,7 +27,7 @@ const maxClicks = Math.max(...analytics.daily.map((d) => d.clicks), 0);
     subtitle="Privacy-safe clicks. IPs are hashed; nothing leaves your container."
   />
 
-  <div class="overflow-auto p-7" style="height: calc(100vh - 86px);">
+  <div class="hl-dash-scroll hl-dash-scroll--desktop-height p-4 md:p-7" style="height: calc(100vh - 86px);">
     <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
       {
         [

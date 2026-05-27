@@ -26,13 +26,34 @@ const appDomain = getAppDomain();
 const previewUrl = profile ? getProfilePreviewPath(profile.slug) : "/";
 const publicUrl = profile ? getPublicProfileUrl(profile.slug) : "/";
 
-const nav = [
+const sidebarNav = [
   { href: "/dashboard", id: "links", label: "Links" },
   { href: "/dashboard/appearance", id: "appearance", label: "Appearance" },
   { href: "/dashboard/analytics", id: "analytics", label: "Analytics" },
   { href: "/dashboard/billing", id: "billing", label: "Billing" },
   { href: "/dashboard/settings", id: "settings", label: "Settings" },
-];
+] as const;
+
+const mobileNav = [
+  { href: "/dashboard", id: "links", label: "Links", icon: "⛓" },
+  { href: "/dashboard/appearance", id: "appearance", label: "Theme", icon: "◐" },
+  { href: "/dashboard/analytics", id: "analytics", label: "Stats", icon: "↗" },
+  {
+    href: "/dashboard/settings",
+    id: "settings",
+    label: "More",
+    icon: "⋯",
+    match: ["settings", "billing"] as const,
+  },
+] as const;
+
+function isNavActive(
+  item: { id: string; match?: readonly string[] },
+  current: typeof active,
+) {
+  if (current === item.id) return true;
+  return item.match?.includes(current) ?? false;
+}
 ---
 
 <BaseLayout title={`${title} · Halamanlink`}>
@@ -65,7 +86,7 @@ const nav = [
 
       <nav class="mt-3 flex flex-col gap-0.5">
         {
-          nav.map((item) => (
+          sidebarNav.map((item) => (
             <a
               href={item.href}
               class:list={["hl-nav-item", { "is-active": active === item.id }]}
@@ -113,7 +134,7 @@ const nav = [
       </form>
     </aside>
 
-    <main class="min-w-0 overflow-hidden">
+    <main class="hl-dash-main min-w-0 overflow-hidden">
       <slot />
     </main>
 
@@ -138,4 +159,18 @@ const nav = [
       )
     }
   </div>
+
+  <nav class="hl-dash-mobile-nav" aria-label="Dashboard">
+    {
+      mobileNav.map((item) => (
+        <a
+          href={item.href}
+          class:list={["hl-dash-mobile-tab", { "is-active": isNavActive(item, active) }]}
+        >
+          <span class="hl-dash-mobile-tab-icon" aria-hidden="true">{item.icon}</span>
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
 </BaseLayout>

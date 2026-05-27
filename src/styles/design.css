@@ -327,6 +327,68 @@
   gap: 24px;
 }
 
+.hl-dash-main {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.hl-dash-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+.hl-dash-mobile-nav {
+  display: none;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  background: var(--hl-ink);
+  border-radius: 22px;
+  padding: 6px;
+  box-shadow: 0 12px 32px -10px rgb(40 30 20 / 0.4);
+}
+
+.hl-dash-mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: oklch(0.7 0.012 70);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.hl-dash-mobile-tab.is-active {
+  background: oklch(from var(--hl-ink) calc(l + 0.1) c h);
+  color: var(--hl-bg);
+}
+
+.hl-dash-mobile-tab-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.hl-link-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .hl-phone-frame {
   background: var(--hl-bg-2);
   border-radius: 32px;
@@ -363,10 +425,49 @@
   .hl-dash-shell,
   .hl-dash-shell.has-preview {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
   }
 
   .hl-dash-sidebar,
   .hl-dash-preview {
     display: none;
+  }
+
+  .hl-dash-shell {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hl-dash-mobile-nav {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .hl-dash-header {
+    padding: 18px 16px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hl-dash-header-title {
+    font-size: 28px !important;
+  }
+
+  .hl-dash-header-actions {
+    width: 100%;
+  }
+
+  .hl-dash-header-actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .hl-dash-scroll--desktop-height {
+    height: auto !important;
+  }
+
+  .hl-link-item-actions {
+    padding-top: 10px;
+    border-top: 1px solid var(--hl-line);
   }
 }

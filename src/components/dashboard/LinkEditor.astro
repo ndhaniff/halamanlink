@@ -20,13 +20,13 @@ const { initialLinks, plan, maxLinks } = Astro.props;
 const urlIconRules = getUrlIconRulesForClient();
 ---
 
-<div class="overflow-auto p-7" style="height: calc(100vh - 86px);">
-  <form id="add-link-form" class="mb-5 flex flex-wrap items-end gap-2">
-    <div class="min-w-[140px] flex-1">
+<div class="hl-dash-scroll p-4 md:p-7">
+  <form id="add-link-form" class="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <div class="min-w-0 flex-1 sm:min-w-[140px]">
       <label class="hl-label" for="new-title">Title</label>
       <input id="new-title" placeholder="Link title" required class="hl-input mt-1" />
     </div>
-    <div class="min-w-[200px] flex-[2]">
+    <div class="min-w-0 flex-[2] sm:min-w-[200px]">
       <label class="hl-label" for="new-url">URL</label>
       <input id="new-url" placeholder="https://example.com" required class="hl-input mt-1" />
     </div>
@@ -49,27 +49,31 @@ const urlIconRules = getUrlIconRulesForClient();
     {
       initialLinks.map((link) => (
         <div
-          class="link-item hl-card flex items-center gap-3.5 p-3.5"
+          class="link-item hl-card flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:gap-3.5"
           data-id={link.id}
           draggable="true"
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
-          <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
-          <IconPicker id={`icon-${link.id}`} value={link.icon} inputClass="link-icon" />
-          <div class="min-w-0 flex-1">
-            <input class="link-title hl-input mb-1 py-1.5 text-sm font-medium" value={link.title} />
-            <input class="link-url hl-input py-1.5 text-[11.5px]" value={link.url} style="font-family: var(--hl-font-mono); color: var(--hl-ink-3);" />
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="cursor-grab px-1" style="color: var(--hl-ink-3);">⋮⋮</span>
+            <IconPicker id={`icon-${link.id}`} value={link.icon} inputClass="link-icon" />
+            <div class="min-w-0 flex-1">
+              <input class="link-title hl-input mb-1 py-1.5 text-sm font-medium" value={link.title} />
+              <input class="link-url hl-input py-1.5 text-[11.5px]" value={link.url} style="font-family: var(--hl-font-mono); color: var(--hl-ink-3);" />
+            </div>
           </div>
-          <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
-            <input type="checkbox" class="link-active" checked={link.isActive} />
-            Active
-          </label>
-          <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
-            <input type="checkbox" class="link-new-tab" checked={link.openInNewTab ?? true} />
-            New tab
-          </label>
-          <button type="button" class="save-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
-          <button type="button" class="delete-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
+          <div class="hl-link-item-actions">
+            <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
+              <input type="checkbox" class="link-active" checked={link.isActive} />
+              Active
+            </label>
+            <label class="flex items-center gap-1 text-xs" style="color: var(--hl-ink-2);">
+              <input type="checkbox" class="link-new-tab" checked={link.openInNewTab ?? true} />
+              New tab
+            </label>
+            <button type="button" class="save-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Save</button>
+            <button type="button" class="delete-link hl-btn hl-btn-soft px-2.5 py-1.5 text-xs">Delete</button>
+          </div>
         </div>
       ))
     }
