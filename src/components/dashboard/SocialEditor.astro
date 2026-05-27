@@ -57,7 +57,7 @@ const urlIconRules = getUrlIconRulesForClient();
           style={{ opacity: link.isActive ? 1 : 0.62 }}
         >
           <div class="flex min-w-0 items-center gap-3">
-            <span class="sortable-handle cursor-grab px-1 active:cursor-grabbing" style="color: var(--hl-ink-3); touch-action: none;">⋮⋮</span>
+            <span class="sortable-handle" style="color: var(--hl-ink-3);">⋮⋮</span>
             <IconPicker id={`social-icon-${link.id}`} value={link.icon} inputClass="social-icon" socialOnly />
             <div class="min-w-0 flex-1">
               <input

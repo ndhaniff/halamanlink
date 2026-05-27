@@ -12,6 +12,27 @@ export function initSortableList(
   let draggingItem: HTMLElement | null = null;
   let pointerId: number | null = null;
   let savedOpacity = "";
+  let activeHandle: HTMLElement | null = null;
+  let startY = 0;
+  let hasMoved = false;
+  const dragThreshold = 6;
+
+  function preventSelect(event: Event) {
+    event.preventDefault();
+  }
+
+  function startDragLock() {
+    document.body.classList.add("is-sorting");
+    document.addEventListener("selectstart", preventSelect);
+    document.addEventListener("dragstart", preventSelect);
+  }
+
+  function endDragLock() {
+    document.body.classList.remove("is-sorting");
+    document.removeEventListener("selectstart", preventSelect);
+    document.removeEventListener("dragstart", preventSelect);
+    window.getSelection()?.removeAllRanges();
+  }
 
   function getAfterElement(y: number) {
     const items = [...container.querySelectorAll<HTMLElement>(itemSelector)].filter(
@@ -39,6 +60,10 @@ export function initSortableList(
   function onPointerMove(event: PointerEvent) {
     if (!draggingItem || event.pointerId !== pointerId) return;
     event.preventDefault();
+
+    if (!hasMoved && Math.abs(event.clientY - startY) < dragThreshold) return;
+
+    hasMoved = true;
     moveItem(event.clientY);
   }
 
@@ -50,10 +75,15 @@ export function initSortableList(
     document.removeEventListener("pointercancel", onPointerEnd);
 
     draggingItem.style.opacity = savedOpacity;
+    activeHandle?.releasePointerCapture(event.pointerId);
+    activeHandle = null;
     draggingItem = null;
     pointerId = null;
     savedOpacity = "";
-    await onReorder();
+    const shouldPersist = hasMoved;
+    hasMoved = false;
+    endDragLock();
+    if (shouldPersist) await onReorder();
   }
 
   container.addEventListener("pointerdown", (event) => {
@@ -62,19 +92,33 @@ export function initSortableList(
 
     const handle = target.closest(handleSelector);
     if (!handle || !container.contains(handle)) return;
+    if (!(handle instanceof HTMLElement)) return;
 
     const item = handle.closest(itemSelector);
     if (!(item instanceof HTMLElement)) return;
 
     draggingItem = item;
+    activeHandle = handle;
     pointerId = event.pointerId;
+    startY = event.clientY;
+    hasMoved = false;
     savedOpacity = item.style.opacity;
     item.style.opacity = "0.75";
+
+    window.getSelection()?.removeAllRanges();
+    startDragLock();
+    handle.setPointerCapture(event.pointerId);
 
     document.addEventListener("pointermove", onPointerMove, { passive: false });
     document.addEventListener("pointerup", onPointerEnd);
     document.addEventListener("pointercancel", onPointerEnd);
 
     event.preventDefault();
+  });
+
+  container.addEventListener("contextmenu", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest(handleSelector)) event.preventDefault();
   });
 }
