@@ -158,18 +158,22 @@ export function initTapReorder(
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const isUp = target.closest(upSelector);
-    const isDown = target.closest(downSelector);
-    if (!isUp && !isDown) return;
+    const upButton = target.closest<HTMLButtonElement>(upSelector);
+    const downButton = target.closest<HTMLButtonElement>(downSelector);
+    if (!upButton && !downButton) return;
+    if ((upButton ?? downButton)?.disabled) return;
 
     const item = target.closest(itemSelector);
     if (!(item instanceof HTMLElement)) return;
 
-    if (isUp) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (upButton) {
       const previous = item.previousElementSibling;
       if (!(previous instanceof HTMLElement) || !previous.matches(itemSelector)) return;
       container.insertBefore(item, previous);
-    } else {
+    } else if (downButton) {
       const next = item.nextElementSibling;
       if (!(next instanceof HTMLElement) || !next.matches(itemSelector)) return;
       container.insertBefore(next, item);

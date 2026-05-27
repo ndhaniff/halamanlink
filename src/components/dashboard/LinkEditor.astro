@@ -103,9 +103,14 @@ const urlIconRules = getUrlIconRulesForClient();
   }
 </div>
 
-<script define:vars={{ plan, urlIconRules }}>
+<script is:inline define:vars={{ plan, urlIconRules }}>
+  window.__LINK_EDITOR__ = { plan, urlIconRules };
+</script>
+
+<script>
   import { initSortableList, initTapReorder } from "../../lib/sortable-list";
 
+  const { urlIconRules } = window.__LINK_EDITOR__;
   const list = document.getElementById("links-list");
   const errorEl = document.getElementById("link-error");
   const addForm = document.getElementById("add-link-form");
@@ -190,6 +195,10 @@ const urlIconRules = getUrlIconRulesForClient();
 
   list?.addEventListener("click", async (e) => {
     const target = e.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.closest(".sortable-up, .sortable-down")) return;
+
     const item = target.closest(".link-item");
     if (!item) return;
 

@@ -111,9 +111,14 @@ const urlIconRules = getUrlIconRulesForClient();
   }
 </div>
 
-<script define:vars={{ urlIconRules }}>
+<script is:inline define:vars={{ urlIconRules }}>
+  window.__SOCIAL_EDITOR__ = { urlIconRules };
+</script>
+
+<script>
   import { initSortableList, initTapReorder } from "../../lib/sortable-list";
 
+  const { urlIconRules } = window.__SOCIAL_EDITOR__;
   const list = document.getElementById("social-list");
   const errorEl = document.getElementById("social-error");
   const addForm = document.getElementById("add-social-form");
@@ -200,6 +205,10 @@ const urlIconRules = getUrlIconRulesForClient();
 
   list?.addEventListener("click", async (e) => {
     const target = e.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.closest(".sortable-up, .sortable-down")) return;
+
     const item = target.closest(".social-item");
     if (!item) return;
 
